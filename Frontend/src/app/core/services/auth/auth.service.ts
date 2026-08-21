@@ -1,7 +1,18 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { environment } from '../../../../environments/environment';
+import { BehaviorSubject, Observable, of, delay, tap } from 'rxjs';
+
+export interface User {
+  id: number;
+  username: string;
+  nombre: string;
+  rol: 'ADMIN' | 'OPERADOR';
+}
+
+export interface AuthResponse {
+  token: string;
+  expiresAt: string;
+  user: User;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -9,25 +20,36 @@ import { environment } from '../../../../environments/environment';
 export class AuthService {
   private tokenKey = 'auth_token';
   private userKey = 'auth_user';
-  private userSubject = new BehaviorSubject<any>(null);
+  private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor() {
     const storedUser = localStorage.getItem(this.userKey);
     if (storedUser) {
       this.userSubject.next(JSON.parse(storedUser));
     }
   }
 
-  login(username: string, password: string): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/auth/login`, { username, password })
-      .pipe(
-        tap((response: any) => {
-          localStorage.setItem(this.tokenKey, response.token);
-          localStorage.setItem(this.userKey, JSON.stringify(response.user));
-          this.userSubject.next(response.user);
-        })
-      );
+  login(username: string, password: string): Observable<AuthResponse> {
+    const mockResponse: AuthResponse = {
+      token: 'mock-jwt-token-' + Date.now(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      user: {
+        id: 1,
+        username: username,
+        nombre: 'Administrador',
+        rol: 'ADMIN'
+      }
+    };
+
+    return of(mockResponse).pipe(
+      delay(800),
+      tap(response => {
+        localStorage.setItem(this.tokenKey, response.token);
+        localStorage.setItem(this.userKey, JSON.stringify(response.user));
+        this.userSubject.next(response.user);
+      })
+    );
   }
 
   logout(): void {
@@ -44,7 +66,7 @@ export class AuthService {
     return !!this.getToken();
   }
 
-  getUser(): any {
+  getUser(): User | null {
     const stored = localStorage.getItem(this.userKey);
     return stored ? JSON.parse(stored) : null;
   }
