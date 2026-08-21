@@ -15,11 +15,19 @@ export const routes: Routes = [
       },
       {
         path: 'sensores',
-        loadComponent: () => import('./features/sensores/sensores.component').then(m => m.SensoresComponent)
+        loadComponent: () => import('./features/sensores/list/list.component').then(m => m.ListComponent)
+      },
+      {
+        path: 'sensores/nuevo',
+        loadComponent: () => import('./features/sensores/form/form.component').then(m => m.FormComponent)
+      },
+      {
+        path: 'sensores/editar/:id',
+        loadComponent: () => import('./features/sensores/form/form.component').then(m => m.FormComponent)
       },
       {
         path: 'alertas',
-        loadComponent: () => import('./features/alertas/alertas.component').then(m => m.AlertasComponent)
+        loadComponent: () => import('./features/alertas/list/list.component').then(m => m.ListComponent)
       },
       {
         path: 'historial',
