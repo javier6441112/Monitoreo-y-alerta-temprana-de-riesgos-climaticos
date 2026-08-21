@@ -1,0 +1,33 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: climate-risk-sqlserver:2022
+    container_name: climate-risk-db
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-ChangeThis_StrongPassword123!}
+      DB_NAME: ${DB_NAME:-ClimateRiskDb}
+    ports:
+      - "${DB_PORT:-1433}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - climate-risk-network
+
+volumes:
+  sqlserver-data:
+    name: climate-risk-sqlserver-data
+
+networks:
+  climate-risk-network:
+    name: climate-risk-network

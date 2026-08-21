@@ -1,0 +1,83 @@
+using Microsoft.AspNetCore.Mvc;
+using WeatherRisk.Api.DTOs.Sensores;
+using WeatherRisk.Api.Services;
+
+namespace WeatherRisk.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class SensoresController : ControllerBase
+{
+    private readonly IWeatherService _weatherService;
+
+    public SensoresController(IWeatherService weatherService)
+    {
+        _weatherService = weatherService;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<SensorDto>>> GetAll()
+    {
+        var sensores = await _weatherService.GetSensoresAsync();
+        return Ok(sensores);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<SensorDto>> GetById(int id)
+    {
+        var sensor = await _weatherService.GetSensorByIdAsync(id);
+        if (sensor is null)
+            return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
+
+        return Ok(sensor);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<SensorDto>> Create([FromBody] CreateSensorRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Nombre))
+            return BadRequest(new { status = 400, message = "El nombre del sensor es obligatorio.", errors = Array.Empty<string>() });
+
+        var sensor = await _weatherService.CreateSensorAsync(request);
+        return CreatedAtAction(nameof(GetById), new { id = sensor.Id }, sensor);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<SensorDto>> Update(int id, [FromBody] UpdateSensorRequestDto request)
+    {
+        var sensor = await _weatherService.UpdateSensorAsync(id, request);
+        if (sensor is null)
+            return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
+
+        return Ok(sensor);
+    }
+
+    [HttpPatch("{id:int}/estado")]
+    public async Task<ActionResult<SensorDto>> UpdateEstado(int id, [FromBody] UpdateSensorEstadoRequestDto request)
+    {
+        var sensor = await _weatherService.GetSensorByIdAsync(id);
+        if (sensor is null)
+            return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
+
+        sensor.Activo = request.Activo;
+        var updated = await _weatherService.UpdateSensorAsync(id, new UpdateSensorRequestDto
+        {
+            Nombre = sensor.Nombre,
+            Tipo = sensor.Tipo,
+            Unidad = sensor.Unidad,
+            ComunidadId = sensor.ComunidadId
+        });
+
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var deleted = await _weatherService.DeleteSensorAsync(id);
+        if (!deleted)
+            return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
+
+        return NoContent();
+    }
+}

@@ -1,0 +1,19 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: climate-risk-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__DefaultConnection: "Server=climate-risk-db,1433;Database=${DB_NAME:-ClimateRiskDb};User Id=sa;Password=${MSSQL_SA_PASSWORD:-ChangeThis_StrongPassword123!};TrustServerCertificate=True;Encrypt=False"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    networks:
+      - climate-risk-network
+
+networks:
+  climate-risk-network:
+    name: climate-risk-network
+    external: true
