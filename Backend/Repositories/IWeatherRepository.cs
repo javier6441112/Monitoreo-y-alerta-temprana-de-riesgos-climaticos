@@ -22,6 +22,11 @@ public interface IWeatherRepository
     Task<List<Bitacora>> GetBitacoraAsync();
     Task<Bitacora> CreateBitacoraAsync(Bitacora bitacora);
     Task<List<Sensor>> GetSensoresActivosAsync();
+    Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null);
+    Task<ConfiguracionAlerta?> GetConfiguracionAlertaByIdAsync(int id);
+    Task<ConfiguracionAlerta> CreateConfiguracionAlertaAsync(ConfiguracionAlerta config);
+    Task<ConfiguracionAlerta?> UpdateConfiguracionAlertaAsync(int id, ConfiguracionAlerta config);
+    Task<bool> DeleteConfiguracionAlertaAsync(int id);
     Task<DashboardSnapshot> GetDashboardSnapshotAsync();
 }
 

@@ -1,17 +1,28 @@
 using WeatherRisk.Api.Models;
+using WeatherRisk.Api.Repositories;
 
 namespace WeatherRisk.Api.Services;
 
 public sealed class ClimateAlertRule : IAlertRule
 {
-    public AlertDecision? Evaluate(Sensor sensor, decimal value) => sensor.Tipo switch
+    private readonly IWeatherRepository _repository;
+
+    public ClimateAlertRule(IWeatherRepository repository)
     {
-        "NIVEL_RIO" when value >= 4.5m => new("ROJO", "INUNDACION", "El nivel del río supera el límite de seguridad."),
-        "NIVEL_RIO" when value >= 3.5m => new("NARANJA", "INUNDACION", "El nivel del río está en alerta moderada."),
-        "NIVEL_RIO" when value >= 2.5m => new("AMARILLO", "INUNDACION", "El nivel del río está elevado."),
-        "VIENTO" when value > 80m => new("ROJO", "TORMENTA", "La velocidad del viento supera el límite seguro."),
-        "VIENTO" when value > 60m => new("NARANJA", "TORMENTA", "La velocidad del viento está alta."),
-        "VIENTO" when value > 40m => new("AMARILLO", "TORMENTA", "Se registró viento fuerte."),
-        _ => null
-    };
+        _repository = repository;
+    }
+
+    public async Task<AlertDecision?> EvaluateAsync(Sensor sensor, decimal value)
+    {
+        var thresholds = await _repository.GetConfiguracionAlertasAsync(sensor.Tipo);
+        var threshold = thresholds
+            .Where(t => t.Activo && value >= t.ValorMinimo)
+            .OrderByDescending(t => t.ValorMinimo)
+            .FirstOrDefault();
+
+        if (threshold is null)
+            return null;
+
+        return new AlertDecision(threshold.Nivel, threshold.Fenomeno, threshold.Mensaje);
+    }
 }

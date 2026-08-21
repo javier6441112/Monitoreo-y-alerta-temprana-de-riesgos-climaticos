@@ -77,6 +77,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IMonitoreoService, MonitoreoService>();
 builder.Services.AddScoped<IAlertEvaluationService, AlertEvaluationService>();
 builder.Services.AddScoped<IAlertRule, ClimateAlertRule>();
+builder.Services.AddScoped<IConfiguracionAlertaService, ConfiguracionAlertaService>();
 
 var app = builder.Build();
 

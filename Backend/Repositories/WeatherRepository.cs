@@ -183,6 +183,67 @@ public class WeatherRepository : IWeatherRepository
     public Task<List<Sensor>> GetSensoresActivosAsync() =>
         Task.FromResult(_sensores.Where(s => s.Activo).ToList());
 
+    public Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null)
+    {
+        var result = new List<ConfiguracionAlerta>
+        {
+            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
+            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
+            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
+            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
+            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
+            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
+        };
+
+        if (!string.IsNullOrWhiteSpace(tipoSensor))
+            result = result.Where(r => r.TipoSensor == tipoSensor && r.Activo).ToList();
+
+        return Task.FromResult(result.OrderByDescending(r => r.ValorMinimo).ToList());
+    }
+
+    public Task<ConfiguracionAlerta?> GetConfiguracionAlertaByIdAsync(int id) =>
+        Task.FromResult(new List<ConfiguracionAlerta>
+        {
+            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
+            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
+            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
+            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
+            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
+            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
+        }.FirstOrDefault(r => r.Id == id));
+
+    public Task<ConfiguracionAlerta> CreateConfiguracionAlertaAsync(ConfiguracionAlerta config)
+    {
+        config.Id = 101;
+        return Task.FromResult(config);
+    }
+
+    public Task<ConfiguracionAlerta?> UpdateConfiguracionAlertaAsync(int id, ConfiguracionAlerta config)
+    {
+        var current = new List<ConfiguracionAlerta>
+        {
+            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
+            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
+            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
+            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
+            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
+            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
+        }.FirstOrDefault(r => r.Id == id);
+
+        if (current is null)
+            return Task.FromResult<ConfiguracionAlerta?>(null);
+
+        current.TipoSensor = config.TipoSensor;
+        current.Nivel = config.Nivel;
+        current.ValorMinimo = config.ValorMinimo;
+        current.Fenomeno = config.Fenomeno;
+        current.Mensaje = config.Mensaje;
+        current.Activo = config.Activo;
+        return Task.FromResult<ConfiguracionAlerta?>(current);
+    }
+
+    public Task<bool> DeleteConfiguracionAlertaAsync(int id) => Task.FromResult(id > 0);
+
     public Task<DashboardSnapshot> GetDashboardSnapshotAsync()
     {
         var temps = _sensores.FirstOrDefault(s => s.Tipo == "TEMPERATURA");
