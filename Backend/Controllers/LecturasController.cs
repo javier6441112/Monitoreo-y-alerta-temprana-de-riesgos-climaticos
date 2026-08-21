@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WeatherRisk.Api.DTOs.Lecturas;
 using WeatherRisk.Api.Services;
@@ -5,6 +6,7 @@ using WeatherRisk.Api.Services;
 namespace WeatherRisk.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class LecturasController : ControllerBase
 {

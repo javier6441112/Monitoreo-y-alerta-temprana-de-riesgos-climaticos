@@ -1,3 +1,7 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 using WeatherRisk.Api.DTOs.Alertas;
 using WeatherRisk.Api.DTOs.Auth;
 using WeatherRisk.Api.DTOs.Dashboard;
@@ -11,10 +15,12 @@ namespace WeatherRisk.Api.Services;
 public class WeatherService : IWeatherService
 {
     private readonly IWeatherRepository _repository;
+    private readonly IConfiguration _configuration;
 
-    public WeatherService(IWeatherRepository repository)
+    public WeatherService(IWeatherRepository repository, IConfiguration configuration)
     {
         _repository = repository;
+        _configuration = configuration;
     }
 
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
@@ -24,10 +30,31 @@ public class WeatherService : IWeatherService
         if (usuario is null || !usuario.Activo || !usuario.PasswordHash.Equals(request.Password, StringComparison.Ordinal))
             throw new InvalidOperationException("Credenciales inválidas");
 
+        var expiresAt = DateTime.UtcNow.AddHours(8);
+        var jwtKey = _configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("La configuración Jwt:Key es obligatoria.");
+        var issuer = _configuration["Jwt:Issuer"] ?? "WeatherRisk.Api";
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.UniqueName, usuario.Username),
+            new Claim(ClaimTypes.Name, usuario.Username),
+            new Claim(ClaimTypes.Role, usuario.Rol)
+        };
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: issuer,
+            claims: claims,
+            expires: expiresAt,
+            signingCredentials: credentials);
+
         return new LoginResponseDto
         {
-            Token = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{usuario.Username}:{DateTime.UtcNow:O}")),
-            ExpiresAt = DateTime.UtcNow.AddHours(8),
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            ExpiresAt = expiresAt,
             User = new UsuarioSummaryDto
             {
                 Id = usuario.Id,

@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using WeatherRisk.Api.DTOs.Auth;
 using WeatherRisk.Api.Services;
 
@@ -16,6 +18,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto request)
     {
         try
@@ -30,9 +33,21 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("me")]
+    [Authorize]
     public async Task<ActionResult<UsuarioSummaryDto>> GetCurrentUser()
     {
-        var user = await _weatherService.GetCurrentUserAsync();
-        return Ok(user);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue(ClaimTypes.Name)
+            ?? string.Empty;
+        var username = User.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+
+        return Ok(new UsuarioSummaryDto
+        {
+            Id = int.TryParse(userId, out var id) ? id : 0,
+            Username = username,
+            Nombre = username,
+            Rol = role
+        });
     }
 }
