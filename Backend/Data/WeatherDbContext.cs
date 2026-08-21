@@ -15,6 +15,7 @@ public class WeatherDbContext : DbContext
     public DbSet<Alerta> Alertas { get; set; }
     public DbSet<HistorialEvento> HistorialEventos { get; set; }
     public DbSet<Bitacora> Bitacora { get; set; }
+    public DbSet<ConfiguracionAlerta> ConfiguracionAlertas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +82,18 @@ public class WeatherDbContext : DbContext
             entity.Property(x => x.FechaHora).HasDefaultValueSql("GETUTCDATE()");
         });
 
+        modelBuilder.Entity<ConfiguracionAlerta>(entity =>
+        {
+            entity.ToTable("ConfiguracionAlertas");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TipoSensor).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Nivel).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Fenomeno).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Mensaje).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.ValorMinimo).HasColumnType("decimal(18,3)");
+            entity.Property(x => x.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
+        });
+
         modelBuilder.Entity<Usuario>().HasData(
             new Usuario { Id = 1, Username = "admin", PasswordHash = "admin123", Nombre = "Administrador", Rol = "ADMIN", Activo = true, FechaCreacion = DateTime.UtcNow },
             new Usuario { Id = 2, Username = "operador", PasswordHash = "operador123", Nombre = "Operador", Rol = "OPERADOR", Activo = true, FechaCreacion = DateTime.UtcNow }
@@ -92,6 +105,15 @@ public class WeatherDbContext : DbContext
             new Sensor { Id = 3, Nombre = "Sensor Viento 01", Tipo = "VIENTO", Unidad = "km/h", Activo = true, ComunidadId = 1, ValorActual = 42m, UltimaLectura = DateTime.UtcNow.AddMinutes(-3), FechaCreacion = DateTime.UtcNow },
             new Sensor { Id = 4, Nombre = "Sensor Lluvia 01", Tipo = "LLUVIA", Unidad = "mm/h", Activo = true, ComunidadId = 1, ValorActual = 18.5m, UltimaLectura = DateTime.UtcNow.AddMinutes(-2), FechaCreacion = DateTime.UtcNow },
             new Sensor { Id = 5, Nombre = "Sensor Río 01", Tipo = "NIVEL_RIO", Unidad = "m", Activo = true, ComunidadId = 1, ValorActual = 2.8m, UltimaLectura = DateTime.UtcNow.AddMinutes(-1), FechaCreacion = DateTime.UtcNow }
+        );
+
+        modelBuilder.Entity<ConfiguracionAlerta>().HasData(
+            new ConfiguracionAlerta { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true, FechaCreacion = DateTime.UtcNow }
         );
     }
 }

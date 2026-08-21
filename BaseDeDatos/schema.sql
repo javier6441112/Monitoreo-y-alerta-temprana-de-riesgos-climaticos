@@ -102,6 +102,22 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.ConfiguracionAlertas', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ConfiguracionAlertas
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ConfiguracionAlertas PRIMARY KEY,
+        TipoSensor NVARCHAR(50) NOT NULL,
+        Nivel NVARCHAR(20) NOT NULL,
+        ValorMinimo DECIMAL(18,3) NOT NULL,
+        Fenomeno NVARCHAR(50) NOT NULL,
+        Mensaje NVARCHAR(500) NOT NULL,
+        Activo BIT NOT NULL CONSTRAINT DF_ConfiguracionAlertas_Activo DEFAULT 1,
+        FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_ConfiguracionAlertas_FechaCreacion DEFAULT GETUTCDATE()
+    );
+END;
+GO
+
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Username = N'admin')
 BEGIN
     SET IDENTITY_INSERT dbo.Usuarios ON;
@@ -122,5 +138,17 @@ BEGIN
            (4, N'Sensor Lluvia 01', N'LLUVIA', N'mm/h', 1, 1, 18.5, DATEADD(MINUTE, -2, GETUTCDATE())),
            (5, N'Sensor Rio 01', N'NIVEL_RIO', N'm', 1, 1, 2.8, DATEADD(MINUTE, -1, GETUTCDATE()));
     SET IDENTITY_INSERT dbo.Sensores OFF;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.ConfiguracionAlertas)
+BEGIN
+    INSERT INTO dbo.ConfiguracionAlertas (TipoSensor, Nivel, ValorMinimo, Fenomeno, Mensaje, Activo)
+    VALUES (N'NIVEL_RIO', N'AMARILLO', 2.5, N'INUNDACION', N'El nivel del río está elevado.', 1),
+           (N'NIVEL_RIO', N'NARANJA', 3.5, N'INUNDACION', N'El nivel del río está en alerta moderada.', 1),
+           (N'NIVEL_RIO', N'ROJO', 4.5, N'INUNDACION', N'El nivel del río supera el límite de seguridad.', 1),
+           (N'VEIENTO', N'AMARILLO', 40, N'TORMENTA', N'Se registró viento fuerte.', 1),
+           (N'VEIENTO', N'NARANJA', 60, N'TORMENTA', N'La velocidad del viento está alta.', 1),
+           (N'VEIENTO', N'ROJO', 80, N'TORMENTA', N'La velocidad del viento supera el límite seguro.', 1);
 END;
 GO

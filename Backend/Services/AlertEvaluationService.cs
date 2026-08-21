@@ -16,9 +16,8 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
 
     public async Task EvaluateAndRegisterAsync(Sensor sensor, decimal value)
     {
-        var decision = _rules
-            .Select(rule => rule.Evaluate(sensor, value))
-            .FirstOrDefault(result => result is not null);
+        var decisions = await Task.WhenAll(_rules.Select(rule => rule.EvaluateAsync(sensor, value)));
+        var decision = decisions.FirstOrDefault(result => result is not null);
 
         if (decision is null)
             return;

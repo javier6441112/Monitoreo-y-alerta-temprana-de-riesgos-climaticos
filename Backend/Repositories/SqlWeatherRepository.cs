@@ -142,6 +142,54 @@ public class SqlWeatherRepository : IWeatherRepository
     public async Task<List<Sensor>> GetSensoresActivosAsync() =>
         await _context.Sensores.Where(s => s.Activo).ToListAsync();
 
+    public async Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null)
+    {
+        var query = _context.ConfiguracionAlertas.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(tipoSensor))
+            query = query.Where(a => a.TipoSensor == tipoSensor && a.Activo);
+
+        return await query.OrderByDescending(a => a.ValorMinimo).ToListAsync();
+    }
+
+    public async Task<ConfiguracionAlerta?> GetConfiguracionAlertaByIdAsync(int id) =>
+        await _context.ConfiguracionAlertas.FirstOrDefaultAsync(a => a.Id == id);
+
+    public async Task<ConfiguracionAlerta> CreateConfiguracionAlertaAsync(ConfiguracionAlerta config)
+    {
+        _context.ConfiguracionAlertas.Add(config);
+        await _context.SaveChangesAsync();
+        return config;
+    }
+
+    public async Task<ConfiguracionAlerta?> UpdateConfiguracionAlertaAsync(int id, ConfiguracionAlerta config)
+    {
+        var existing = await _context.ConfiguracionAlertas.FirstOrDefaultAsync(a => a.Id == id);
+        if (existing is null)
+            return null;
+
+        existing.TipoSensor = config.TipoSensor;
+        existing.Nivel = config.Nivel;
+        existing.ValorMinimo = config.ValorMinimo;
+        existing.Fenomeno = config.Fenomeno;
+        existing.Mensaje = config.Mensaje;
+        existing.Activo = config.Activo;
+
+        await _context.SaveChangesAsync();
+        return existing;
+    }
+
+    public async Task<bool> DeleteConfiguracionAlertaAsync(int id)
+    {
+        var config = await _context.ConfiguracionAlertas.FirstOrDefaultAsync(a => a.Id == id);
+        if (config is null)
+            return false;
+
+        _context.ConfiguracionAlertas.Remove(config);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<DashboardSnapshot> GetDashboardSnapshotAsync()
     {
         var sensores = await _context.Sensores.ToListAsync();
