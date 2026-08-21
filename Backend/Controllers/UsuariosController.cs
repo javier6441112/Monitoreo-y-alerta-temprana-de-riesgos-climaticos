@@ -10,17 +10,17 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class UsuariosController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly IUsuariosService _usuariosService;
 
-    public UsuariosController(IWeatherService weatherService)
+    public UsuariosController(IUsuariosService usuariosService)
     {
-        _weatherService = weatherService;
+        _usuariosService = usuariosService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<Usuario>>> GetUsuarios()
     {
-        var usuarios = await _weatherService.GetUsuariosAsync();
+        var usuarios = await _usuariosService.GetAllAsync();
         return Ok(usuarios);
     }
 }

@@ -9,17 +9,19 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class MonitoreoController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly IMonitoreoService _monitoreoService;
 
-    public MonitoreoController(IWeatherService weatherService)
+    public MonitoreoController(IMonitoreoService monitoreoService)
     {
-        _weatherService = weatherService;
+        _monitoreoService = monitoreoService;
     }
 
     [HttpPost("reiniciar")]
     public async Task<ActionResult> Reiniciar()
     {
-        var mensaje = await _weatherService.ReiniciarMonitoreoAsync();
+        var username = User.Identity?.Name ?? "desconocido";
+        var userId = int.TryParse(User.FindFirst("sub")?.Value, out var parsedId) ? parsedId : (int?)null;
+        var mensaje = await _monitoreoService.RestartAsync(username, userId);
         return Ok(new { mensaje, fechaHora = DateTime.UtcNow });
     }
 }

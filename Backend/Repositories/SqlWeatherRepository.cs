@@ -122,6 +122,13 @@ public class SqlWeatherRepository : IWeatherRepository
     public async Task<List<HistorialEvento>> GetHistorialAsync() =>
         await _context.HistorialEventos.OrderByDescending(h => h.FechaHora).ToListAsync();
 
+    public async Task<HistorialEvento> CreateHistorialEventoAsync(HistorialEvento evento)
+    {
+        _context.HistorialEventos.Add(evento);
+        await _context.SaveChangesAsync();
+        return evento;
+    }
+
     public async Task<List<Bitacora>> GetBitacoraAsync() =>
         await _context.Bitacora.OrderByDescending(b => b.FechaHora).ToListAsync();
 

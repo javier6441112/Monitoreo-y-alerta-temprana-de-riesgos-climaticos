@@ -66,7 +66,17 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddScoped<IWeatherRepository, SqlWeatherRepository>();
-builder.Services.AddScoped<IWeatherService, WeatherService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUsuariosService, UsuariosService>();
+builder.Services.AddScoped<ISensoresService, SensoresService>();
+builder.Services.AddScoped<ILecturasService, LecturasService>();
+builder.Services.AddScoped<IAlertasService, AlertasService>();
+builder.Services.AddScoped<IHistorialService, HistorialService>();
+builder.Services.AddScoped<IBitacoraService, BitacoraService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IMonitoreoService, MonitoreoService>();
+builder.Services.AddScoped<IAlertEvaluationService, AlertEvaluationService>();
+builder.Services.AddScoped<IAlertRule, ClimateAlertRule>();
 
 var app = builder.Build();
 

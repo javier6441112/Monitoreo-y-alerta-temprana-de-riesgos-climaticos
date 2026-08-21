@@ -9,31 +9,31 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class AlertasController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly IAlertasService _alertasService;
 
-    public AlertasController(IWeatherService weatherService)
+    public AlertasController(IAlertasService alertasService)
     {
-        _weatherService = weatherService;
+        _alertasService = alertasService;
     }
 
     [HttpGet]
     public async Task<ActionResult> GetAll([FromQuery] bool? activas)
     {
-        var alertas = await _weatherService.GetAlertasAsync(activas);
+        var alertas = await _alertasService.GetAllAsync(activas);
         return Ok(alertas);
     }
 
     [HttpGet("activas")]
     public async Task<ActionResult> GetActivas()
     {
-        var alertas = await _weatherService.GetAlertasAsync(true);
+        var alertas = await _alertasService.GetAllAsync(true);
         return Ok(alertas);
     }
 
     [HttpPost("{id:int}/cerrar")]
     public async Task<ActionResult> Cerrar(int id)
     {
-        var alerta = await _weatherService.CerrarAlertaAsync(id);
+        var alerta = await _alertasService.CloseAsync(id);
         if (alerta is null)
             return NotFound(new { status = 404, message = "Alerta no encontrada.", errors = Array.Empty<string>() });
 

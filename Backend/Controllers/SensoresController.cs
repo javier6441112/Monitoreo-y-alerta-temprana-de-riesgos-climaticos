@@ -10,24 +10,24 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class SensoresController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly ISensoresService _sensoresService;
 
-    public SensoresController(IWeatherService weatherService)
+    public SensoresController(ISensoresService sensoresService)
     {
-        _weatherService = weatherService;
+        _sensoresService = sensoresService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<SensorDto>>> GetAll()
     {
-        var sensores = await _weatherService.GetSensoresAsync();
+        var sensores = await _sensoresService.GetAllAsync();
         return Ok(sensores);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<SensorDto>> GetById(int id)
     {
-        var sensor = await _weatherService.GetSensorByIdAsync(id);
+        var sensor = await _sensoresService.GetByIdAsync(id);
         if (sensor is null)
             return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
 
@@ -40,14 +40,14 @@ public class SensoresController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Nombre))
             return BadRequest(new { status = 400, message = "El nombre del sensor es obligatorio.", errors = Array.Empty<string>() });
 
-        var sensor = await _weatherService.CreateSensorAsync(request);
+        var sensor = await _sensoresService.CreateAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = sensor.Id }, sensor);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<SensorDto>> Update(int id, [FromBody] UpdateSensorRequestDto request)
     {
-        var sensor = await _weatherService.UpdateSensorAsync(id, request);
+        var sensor = await _sensoresService.UpdateAsync(id, request);
         if (sensor is null)
             return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
 
@@ -57,12 +57,12 @@ public class SensoresController : ControllerBase
     [HttpPatch("{id:int}/estado")]
     public async Task<ActionResult<SensorDto>> UpdateEstado(int id, [FromBody] UpdateSensorEstadoRequestDto request)
     {
-        var sensor = await _weatherService.GetSensorByIdAsync(id);
+        var sensor = await _sensoresService.GetByIdAsync(id);
         if (sensor is null)
             return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
 
         sensor.Activo = request.Activo;
-        var updated = await _weatherService.UpdateSensorAsync(id, new UpdateSensorRequestDto
+        var updated = await _sensoresService.UpdateAsync(id, new UpdateSensorRequestDto
         {
             Nombre = sensor.Nombre,
             Tipo = sensor.Tipo,
@@ -76,7 +76,7 @@ public class SensoresController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id)
     {
-        var deleted = await _weatherService.DeleteSensorAsync(id);
+        var deleted = await _sensoresService.DeleteAsync(id);
         if (!deleted)
             return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
 

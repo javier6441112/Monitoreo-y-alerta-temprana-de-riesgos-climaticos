@@ -1,0 +1,62 @@
+using WeatherRisk.Api.Models;
+using WeatherRisk.Api.Repositories;
+
+namespace WeatherRisk.Api.Services;
+
+public sealed class AlertEvaluationService : IAlertEvaluationService
+{
+    private readonly IWeatherRepository _repository;
+    private readonly IEnumerable<IAlertRule> _rules;
+
+    public AlertEvaluationService(IWeatherRepository repository, IEnumerable<IAlertRule> rules)
+    {
+        _repository = repository;
+        _rules = rules;
+    }
+
+    public async Task EvaluateAndRegisterAsync(Sensor sensor, decimal value)
+    {
+        var decision = _rules
+            .Select(rule => rule.Evaluate(sensor, value))
+            .FirstOrDefault(result => result is not null);
+
+        if (decision is null)
+            return;
+
+        var alerta = await _repository.CreateAlertaAsync(new Alerta
+        {
+            SensorId = sensor.Id,
+            Nivel = decision.Nivel,
+            Fenomeno = decision.Fenomeno,
+            Mensaje = decision.Mensaje,
+            ValorDetectado = value,
+            Activa = true
+        });
+
+        await _repository.CreateBitacoraAsync(new Bitacora
+        {
+            UsuarioId = 1,
+            Usuario = "sistema",
+            Accion = "ALERTA_GENERADA",
+            Descripcion = $"Se generó alerta {decision.Nivel} para {sensor.Nombre}."
+        });
+
+        await _repository.CreateBitacoraAsync(new Bitacora
+        {
+            UsuarioId = 1,
+            Usuario = "sistema",
+            Accion = "REGISTRO_HISTORIAL",
+            Descripcion = $"Evento {decision.Fenomeno} registrado para {sensor.Nombre}."
+        });
+
+        await _repository.CreateHistorialEventoAsync(new HistorialEvento
+        {
+            SensorId = sensor.Id,
+            AlertaId = alerta.Id,
+            Fenomeno = decision.Fenomeno,
+            Nivel = decision.Nivel,
+            Mensaje = decision.Mensaje,
+            FechaHora = DateTime.UtcNow
+        });
+    }
+}

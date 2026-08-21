@@ -10,17 +10,17 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class DashboardController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly IDashboardService _dashboardService;
 
-    public DashboardController(IWeatherService weatherService)
+    public DashboardController(IDashboardService dashboardService)
     {
-        _weatherService = weatherService;
+        _dashboardService = dashboardService;
     }
 
     [HttpGet]
     public async Task<ActionResult<DashboardDto>> GetDashboard()
     {
-        var dashboard = await _weatherService.GetDashboardAsync();
+        var dashboard = await _dashboardService.GetAsync();
         return Ok(dashboard);
     }
 }

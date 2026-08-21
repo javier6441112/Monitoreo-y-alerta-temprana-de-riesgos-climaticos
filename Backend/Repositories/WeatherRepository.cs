@@ -162,6 +162,13 @@ public class WeatherRepository : IWeatherRepository
     public Task<List<HistorialEvento>> GetHistorialAsync() =>
         Task.FromResult(_historial.OrderByDescending(h => h.FechaHora).ToList());
 
+    public Task<HistorialEvento> CreateHistorialEventoAsync(HistorialEvento evento)
+    {
+        evento.Id = _historial.Count > 0 ? _historial.Max(h => h.Id) + 1 : 1;
+        _historial.Add(evento);
+        return Task.FromResult(evento);
+    }
+
     public Task<List<Bitacora>> GetBitacoraAsync() =>
         Task.FromResult(_bitacora.OrderByDescending(b => b.FechaHora).ToList());
 

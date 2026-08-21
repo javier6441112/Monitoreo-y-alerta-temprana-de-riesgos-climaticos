@@ -18,6 +18,7 @@ public interface IWeatherRepository
     Task<Alerta> CreateAlertaAsync(Alerta alerta);
     Task<Alerta?> CerrarAlertaAsync(int id);
     Task<List<HistorialEvento>> GetHistorialAsync();
+    Task<HistorialEvento> CreateHistorialEventoAsync(HistorialEvento evento);
     Task<List<Bitacora>> GetBitacoraAsync();
     Task<Bitacora> CreateBitacoraAsync(Bitacora bitacora);
     Task<List<Sensor>> GetSensoresActivosAsync();

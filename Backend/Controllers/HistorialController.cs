@@ -10,17 +10,17 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class HistorialController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly IHistorialService _historialService;
 
-    public HistorialController(IWeatherService weatherService)
+    public HistorialController(IHistorialService historialService)
     {
-        _weatherService = weatherService;
+        _historialService = historialService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<HistorialEvento>>> GetAll()
     {
-        var historial = await _weatherService.GetHistorialAsync();
+        var historial = await _historialService.GetAllAsync();
         return Ok(historial);
     }
 }

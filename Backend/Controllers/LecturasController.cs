@@ -10,17 +10,17 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class LecturasController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly ILecturasService _lecturasService;
 
-    public LecturasController(IWeatherService weatherService)
+    public LecturasController(ILecturasService lecturasService)
     {
-        _weatherService = weatherService;
+        _lecturasService = lecturasService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<LecturaDto>>> Get([FromQuery] int? sensorId, [FromQuery] DateTime? fechaInicio, [FromQuery] DateTime? fechaFin)
     {
-        var lecturas = await _weatherService.GetLecturasAsync(sensorId, fechaInicio, fechaFin);
+        var lecturas = await _lecturasService.GetAllAsync(sensorId, fechaInicio, fechaFin);
         return Ok(lecturas);
     }
 
@@ -29,7 +29,7 @@ public class LecturasController : ControllerBase
     {
         try
         {
-            var lectura = await _weatherService.CreateLecturaAsync(request);
+            var lectura = await _lecturasService.CreateAsync(request);
             return Ok(lectura);
         }
         catch (KeyNotFoundException ex)

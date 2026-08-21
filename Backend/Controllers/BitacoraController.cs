@@ -10,17 +10,17 @@ namespace WeatherRisk.Api.Controllers;
 [Route("api/[controller]")]
 public class BitacoraController : ControllerBase
 {
-    private readonly IWeatherService _weatherService;
+    private readonly IBitacoraService _bitacoraService;
 
-    public BitacoraController(IWeatherService weatherService)
+    public BitacoraController(IBitacoraService bitacoraService)
     {
-        _weatherService = weatherService;
+        _bitacoraService = bitacoraService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<Bitacora>>> GetAll()
     {
-        var bitacora = await _weatherService.GetBitacoraAsync();
+        var bitacora = await _bitacoraService.GetAllAsync();
         return Ok(bitacora);
     }
 }
