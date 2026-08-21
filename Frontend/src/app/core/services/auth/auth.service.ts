@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, delay, tap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 export interface User {
   id: number;
@@ -23,7 +25,7 @@ export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
 
-  constructor() {
+  constructor(private http: HttpClient) {
     const storedUser = localStorage.getItem(this.userKey);
     if (storedUser) {
       this.userSubject.next(JSON.parse(storedUser));
@@ -31,23 +33,20 @@ export class AuthService {
   }
 
   login(username: string, password: string): Observable<AuthResponse> {
-    const mockResponse: AuthResponse = {
-      token: 'mock-jwt-token-' + Date.now(),
-      expiresAt: new Date(Date.now() + 3600000).toISOString(),
-      user: {
-        id: 1,
-        username: username,
-        nombre: 'Administrador',
-        rol: 'ADMIN'
-      }
-    };
-
-    return of(mockResponse).pipe(
-      delay(800),
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, { username, password }).pipe(
       tap(response => {
         localStorage.setItem(this.tokenKey, response.token);
         localStorage.setItem(this.userKey, JSON.stringify(response.user));
         this.userSubject.next(response.user);
+      })
+    );
+  }
+
+  me(): Observable<User> {
+    return this.http.get<User>(`${environment.apiUrl}/auth/me`).pipe(
+      tap(user => {
+        localStorage.setItem(this.userKey, JSON.stringify(user));
+        this.userSubject.next(user);
       })
     );
   }

@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 export interface DashboardData {
   temperatura: { valor: number; unidad: string };
@@ -17,18 +19,9 @@ export interface DashboardData {
   providedIn: 'root'
 })
 export class DashboardService {
+  constructor(private http: HttpClient) {}
+
   getDashboard(): Observable<DashboardData> {
-    const data: DashboardData = {
-      temperatura: { valor: 27.5, unidad: '°C' },
-      humedad: { valor: 78, unidad: '%' },
-      viento: { valor: 42, unidad: 'km/h' },
-      lluvia: { valor: 18.5, unidad: 'mm/h' },
-      nivelRio: { valor: 2.8, unidad: 'm' },
-      nivelGeneral: 'AMARILLO',
-      alertasActivas: 2,
-      sensoresActivos: 4,
-      sensoresTotales: 4
-    };
-    return of(data).pipe(delay(300));
+    return this.http.get<DashboardData>(`${environment.apiUrl}/dashboard`);
   }
 }

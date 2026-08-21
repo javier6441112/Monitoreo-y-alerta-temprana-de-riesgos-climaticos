@@ -4,13 +4,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using WeatherRisk.Api.Data;
+using WeatherRisk.Api.Hubs;
 using WeatherRisk.Api.Repositories;
 using WeatherRisk.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost,1433;Database=ClimateRiskDb;User Id=sa;Password=ChangeThis_StrongPassword123!;TrustServerCertificate=True;Encrypt=False";
+    ?? "Server=localhost,1433;Database=ClimateRiskDb;User Id=sa;Password=desa123$;TrustServerCertificate=True;Encrypt=False";
 
 builder.Services.AddDbContext<WeatherDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -36,6 +37,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -91,6 +93,7 @@ app.UseSwaggerUI(c =>
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<MonitoreoHub>("/hubs/monitoreo");
 
 app.MapGet("/health", () => Results.Ok(new
 {

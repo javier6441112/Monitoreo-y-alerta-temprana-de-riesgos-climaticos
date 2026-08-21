@@ -31,7 +31,7 @@ export const routes: Routes = [
       },
       {
         path: 'historial',
-        loadComponent: () => import('./features/historial/historial.component').then(m => m.HistorialComponent)
+        loadComponent: () => import('./features/historial/main/main.component').then(m => m.MainComponent)
       },
       {
         path: '',

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.SignalR;
+using WeatherRisk.Api.Hubs;
 using WeatherRisk.Api.Models;
 using WeatherRisk.Api.Repositories;
 
@@ -7,11 +9,16 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
 {
     private readonly IWeatherRepository _repository;
     private readonly IEnumerable<IAlertRule> _rules;
+    private readonly IHubContext<MonitoreoHub> _hubContext;
 
-    public AlertEvaluationService(IWeatherRepository repository, IEnumerable<IAlertRule> rules)
+    public AlertEvaluationService(
+        IWeatherRepository repository,
+        IEnumerable<IAlertRule> rules,
+        IHubContext<MonitoreoHub> hubContext)
     {
         _repository = repository;
         _rules = rules;
+        _hubContext = hubContext;
     }
 
     public async Task EvaluateAndRegisterAsync(Sensor sensor, decimal value)
@@ -57,5 +64,7 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
             Mensaje = decision.Mensaje,
             FechaHora = DateTime.UtcNow
         });
+
+        await _hubContext.Clients.All.SendAsync("alertaGenerada", alerta);
     }
 }

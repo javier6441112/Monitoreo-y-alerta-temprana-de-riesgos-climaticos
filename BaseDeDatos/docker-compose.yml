@@ -9,7 +9,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-ChangeThis_StrongPassword123!}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-desa123$}
       DB_NAME: ${DB_NAME:-ClimateRiskDb}
     ports:
       - "${DB_PORT:-1433}:1433"

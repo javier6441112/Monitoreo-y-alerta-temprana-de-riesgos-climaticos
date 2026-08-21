@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.SignalR;
+using WeatherRisk.Api.Hubs;
 using WeatherRisk.Api.DTOs.Lecturas;
 using WeatherRisk.Api.Models;
 using WeatherRisk.Api.Repositories;
@@ -8,11 +10,16 @@ public sealed class LecturasService : ILecturasService
 {
     private readonly IWeatherRepository _repository;
     private readonly IAlertEvaluationService _alertEvaluation;
+    private readonly IHubContext<MonitoreoHub> _hubContext;
 
-    public LecturasService(IWeatherRepository repository, IAlertEvaluationService alertEvaluation)
+    public LecturasService(
+        IWeatherRepository repository,
+        IAlertEvaluationService alertEvaluation,
+        IHubContext<MonitoreoHub> hubContext)
     {
         _repository = repository;
         _alertEvaluation = alertEvaluation;
+        _hubContext = hubContext;
     }
 
     public async Task<List<LecturaDto>> GetAllAsync(int? sensorId, DateTime? fechaInicio, DateTime? fechaFin) =>
@@ -34,6 +41,12 @@ public sealed class LecturasService : ILecturasService
         });
 
         await _alertEvaluation.EvaluateAndRegisterAsync(sensor, lectura.Valor);
+        await _hubContext.Clients.All.SendAsync("lecturaActualizada", new
+        {
+            sensorId = lectura.SensorId,
+            valor = lectura.Valor,
+            fechaHora = lectura.FechaHora
+        });
         return Map(lectura);
     }
 

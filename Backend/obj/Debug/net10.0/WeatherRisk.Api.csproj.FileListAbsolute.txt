@@ -168,3 +168,6 @@ C:\Users\jisaa\Desktop\universidad\ciclo8\DesarrolloWeb\Proyecto1\Monitoreo-y-al
 C:\Users\jisaa\Desktop\universidad\ciclo8\DesarrolloWeb\Proyecto1\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\Backend\bin\Debug\net10.0\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
 C:\Users\jisaa\Desktop\universidad\ciclo8\DesarrolloWeb\Proyecto1\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\Backend\bin\Debug\net10.0\runtimes\win\lib\net9.0\System.Windows.Extensions.dll
 C:\Users\jisaa\Desktop\universidad\ciclo8\DesarrolloWeb\Proyecto1\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\Backend\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\HP\Desktop\UMG\OCTAVO CICLO\DESARROLLO WEB\proyecto\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\Backend\obj\Debug\net10.0\WeatherRisk.Api.dll
+C:\Users\HP\Desktop\UMG\OCTAVO CICLO\DESARROLLO WEB\proyecto\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\Backend\obj\Debug\net10.0\refint\WeatherRisk.Api.dll
+C:\Users\HP\Desktop\UMG\OCTAVO CICLO\DESARROLLO WEB\proyecto\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\Backend\obj\Debug\net10.0\WeatherRisk.Api.pdb

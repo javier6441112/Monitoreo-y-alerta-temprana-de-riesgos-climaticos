@@ -7,4 +7,4 @@ COPY schema.sql /docker-entrypoint-initdb.d/schema.sql
 
 RUN chmod +x /usr/local/bin/init.sh
 
-ENTRYPOINT ["/usr/local/bin/init.sh"]
+ENTRYPOINT ["/bin/bash", "/usr/local/bin/init.sh"]

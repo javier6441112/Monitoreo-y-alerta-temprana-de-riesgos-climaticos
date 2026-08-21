@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: climate-risk-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    networks:
+      - climate-risk-network
+
+networks:
+  climate-risk-network:
+    name: climate-risk-network
+    external: true

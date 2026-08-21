@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 export interface Alerta {
   id: number;
@@ -16,42 +18,19 @@ export interface Alerta {
   providedIn: 'root'
 })
 export class AlertaService {
-  private alertas: Alerta[] = [
-    {
-      id: 1,
-      nivel: 'AMARILLO',
-      fenomeno: 'INUNDACION',
-      mensaje: 'Nivel del río en nivel de precaución.',
-      sensorId: 2,
-      valorDetectado: 3.2,
-      fechaHora: new Date(Date.now() - 3600000).toISOString(),
-      activa: true
-    },
-    {
-      id: 2,
-      nivel: 'NARANJA',
-      fenomeno: 'TORMENTA',
-      mensaje: 'Velocidad del viento elevada.',
-      sensorId: 3,
-      valorDetectado: 65,
-      fechaHora: new Date(Date.now() - 1800000).toISOString(),
-      activa: true
-    }
-  ];
+  private readonly endpoint = `${environment.apiUrl}/alertas`;
+
+  constructor(private http: HttpClient) {}
 
   getAlertas(): Observable<Alerta[]> {
-    return of([...this.alertas]).pipe(delay(300));
+    return this.http.get<Alerta[]>(this.endpoint);
   }
 
   getAlertasActivas(): Observable<Alerta[]> {
-    return of(this.alertas.filter(a => a.activa)).pipe(delay(200));
+    return this.http.get<Alerta[]>(`${this.endpoint}/activas`);
   }
 
   cerrarAlerta(id: number): Observable<{ id: number; activa: boolean }> {
-    const index = this.alertas.findIndex(a => a.id === id);
-    if (index !== -1) {
-      this.alertas[index].activa = false;
-    }
-    return of({ id, activa: false }).pipe(delay(200));
+    return this.http.post<{ id: number; activa: boolean }>(`${this.endpoint}/${id}/cerrar`, {});
   }
 }
