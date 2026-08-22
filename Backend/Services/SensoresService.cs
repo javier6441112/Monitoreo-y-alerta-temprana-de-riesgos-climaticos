@@ -43,6 +43,8 @@ public sealed class SensoresService : ISensoresService
         sensor.Tipo = request.Tipo;
         sensor.Unidad = request.Unidad;
         sensor.ComunidadId = request.ComunidadId;
+        if (request.Activo.HasValue)
+            sensor.Activo = request.Activo.Value;
         var updated = await _repository.UpdateSensorAsync(id, sensor);
         return updated is null ? null : Map(updated);
     }

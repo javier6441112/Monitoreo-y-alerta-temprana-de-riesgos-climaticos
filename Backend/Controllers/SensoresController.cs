@@ -67,7 +67,8 @@ public class SensoresController : ControllerBase
             Nombre = sensor.Nombre,
             Tipo = sensor.Tipo,
             Unidad = sensor.Unidad,
-            ComunidadId = sensor.ComunidadId
+            ComunidadId = sensor.ComunidadId,
+            Activo = request.Activo,
         });
 
         return Ok(updated);

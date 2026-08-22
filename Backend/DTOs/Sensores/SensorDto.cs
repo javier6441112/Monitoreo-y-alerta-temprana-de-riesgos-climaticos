@@ -26,6 +26,7 @@ public class UpdateSensorRequestDto
     public string Tipo { get; set; } = string.Empty;
     public string Unidad { get; set; } = string.Empty;
     public int ComunidadId { get; set; } = 1;
+    public bool? Activo { get; set; }
 }
 
 public class UpdateSensorEstadoRequestDto
