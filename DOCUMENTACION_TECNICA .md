@@ -1,5 +1,14 @@
 # Documentación Técnica del Proyecto
 
+**Link del proyecto**
+[Monitoreo y alerta temprana de riesgos climaticos](https://github.com/javier6441112/Monitoreo-y-alerta-temprana-de-riesgos-climaticos.git)
+##Integrantes 
+```
+Tedi Castellanos 7690-23-3016
+Javier Sandoval  7690-23-5643
+
+```
+
 ## 1. Información general
 
 ### 1.1 Nombre del proyecto
