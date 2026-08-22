@@ -19,10 +19,18 @@ import { AlertaService } from '../services/alerta/alerta.service';
         <mat-icon matListItemIcon>sensors</mat-icon>
         <span matListItemTitle>Sensores</span>
       </a>
+      <a mat-list-item routerLink="/lecturas" routerLinkActive="active">
+        <mat-icon matListItemIcon>show_chart</mat-icon>
+        <span matListItemTitle>Lecturas</span>
+      </a>
       <a mat-list-item routerLink="/alertas" routerLinkActive="active">
         <mat-icon matListItemIcon>notifications</mat-icon>
         <span matListItemTitle>Alertas</span>
         <span class="badge" *ngIf="alertasActivas > 0">{{ alertasActivas }}</span>
+      </a>
+      <a mat-list-item routerLink="/configuracion-alertas" routerLinkActive="active">
+        <mat-icon matListItemIcon>tune</mat-icon>
+        <span matListItemTitle>Configurar alertas</span>
       </a>
       <a mat-list-item routerLink="/historial" routerLinkActive="active">
         <mat-icon matListItemIcon>history</mat-icon>

@@ -18,6 +18,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/sensores/list/list.component').then(m => m.ListComponent)
       },
       {
+        path: 'lecturas',
+        loadComponent: () => import('./features/lecturas/lecturas.component').then(m => m.LecturasComponent)
+      },
+      {
         path: 'sensores/nuevo',
         loadComponent: () => import('./features/sensores/form/form.component').then(m => m.FormComponent)
       },
@@ -28,6 +32,10 @@ export const routes: Routes = [
       {
         path: 'alertas',
         loadComponent: () => import('./features/alertas/list/list.component').then(m => m.ListComponent)
+      },
+      {
+        path: 'configuracion-alertas',
+        loadComponent: () => import('./features/configuracion-alertas/configuracion-alertas.component').then(m => m.ConfiguracionAlertasComponent)
       },
       {
         path: 'historial',
