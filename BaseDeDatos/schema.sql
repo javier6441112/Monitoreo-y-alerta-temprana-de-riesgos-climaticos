@@ -147,8 +147,8 @@ BEGIN
     VALUES (N'NIVEL_RIO', N'AMARILLO', 2.5, N'INUNDACION', N'El nivel del río está elevado.', 1),
            (N'NIVEL_RIO', N'NARANJA', 3.5, N'INUNDACION', N'El nivel del río está en alerta moderada.', 1),
            (N'NIVEL_RIO', N'ROJO', 4.5, N'INUNDACION', N'El nivel del río supera el límite de seguridad.', 1),
-           (N'VEIENTO', N'AMARILLO', 40, N'TORMENTA', N'Se registró viento fuerte.', 1),
-           (N'VEIENTO', N'NARANJA', 60, N'TORMENTA', N'La velocidad del viento está alta.', 1),
-           (N'VEIENTO', N'ROJO', 80, N'TORMENTA', N'La velocidad del viento supera el límite seguro.', 1);
+           (N'VIENTO', N'AMARILLO', 40, N'TORMENTA', N'Se registró viento fuerte.', 1),
+           (N'VIENTO', N'NARANJA', 60, N'TORMENTA', N'La velocidad del viento está alta.', 1),
+           (N'VIENTO', N'ROJO', 80, N'TORMENTA', N'La velocidad del viento supera el límite seguro.', 1);
 END;
 GO

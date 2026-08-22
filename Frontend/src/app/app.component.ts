@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { AlertaNotificationService } from './core/services/alerta-notification/alerta-notification.service';
+import { Signalr } from './core/services/signalr/signalr';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +12,27 @@ import { RouterOutlet } from '@angular/router';
       <router-outlet></router-outlet>
     </div>
   `,
-  styles: []
+  styles: [
+    `
+      ::ng-deep .alerta-snackbar {
+        background: #b71c1c;
+        color: #fff;
+        font-weight: 600;
+      }
+    `
+  ]
 })
-export class AppComponent {
-  constructor() {
-    console.log('🚀 AppComponent cargado');
+export class AppComponent implements OnInit {
+  constructor(
+    private readonly signalr: Signalr,
+    private readonly alertaNotificationService: AlertaNotificationService
+  ) {}
+
+  async ngOnInit(): Promise<void> {
+    try {
+      await this.signalr.connect();
+    } catch (error) {
+      console.error('No se pudo conectar al hub de alertas:', error);
+    }
   }
 }
