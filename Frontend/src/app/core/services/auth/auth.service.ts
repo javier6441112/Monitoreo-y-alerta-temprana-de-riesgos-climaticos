@@ -2,12 +2,16 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { Role } from '../../models/api-contract.models';
 
 export interface User {
   id: number;
   username: string;
   nombre: string;
-  rol: 'ADMIN' | 'OPERADOR';
+  rol: Role;
+  activo?: boolean;
+  fechaCreacion?: string;
+  ultimoAcceso?: string | null;
 }
 
 export interface AuthResponse {
@@ -26,9 +30,9 @@ export class AuthService {
   user$ = this.userSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    const storedUser = localStorage.getItem(this.userKey);
+    const storedUser = this.readStoredUser();
     if (storedUser) {
-      this.userSubject.next(JSON.parse(storedUser));
+      this.userSubject.next(storedUser);
     }
   }
 
@@ -52,13 +56,15 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.userKey);
+    }
     this.userSubject.next(null);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return typeof localStorage === 'undefined' ? null : localStorage.getItem(this.tokenKey);
   }
 
   isAuthenticated(): boolean {
@@ -66,7 +72,23 @@ export class AuthService {
   }
 
   getUser(): User | null {
+    return this.userSubject.value;
+  }
+
+  hasRole(roles: Role[]): boolean {
+    const user = this.getUser();
+    return !!user && roles.includes(user.rol);
+  }
+
+  private readStoredUser(): User | null {
+    if (typeof localStorage === 'undefined') return null;
     const stored = localStorage.getItem(this.userKey);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as User;
+    } catch {
+      localStorage.removeItem(this.userKey);
+      return null;
+    }
   }
 }

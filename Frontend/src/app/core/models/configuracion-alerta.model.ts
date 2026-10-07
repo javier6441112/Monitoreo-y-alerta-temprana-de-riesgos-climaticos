@@ -1,22 +1,5 @@
-export type NivelAlerta = 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO';
+import { NivelAlerta, ReglaAlerta, ReglaAlertaRequest, TipoSensor } from './api-contract.models';
 
-export type TipoSensor = 'TEMPERATURA' | 'HUMEDAD' | 'VIENTO' | 'LLUVIA' | 'NIVEL_RIO';
-
-export interface ConfiguracionAlerta {
-  id: number;
-  tipoSensor: TipoSensor | string;
-  nivel: NivelAlerta;
-  valorMinimo: number;
-  fenomeno: string;
-  mensaje: string;
-  activo: boolean;
-}
-
-export interface ConfiguracionAlertaRequest {
-  tipoSensor: string;
-  nivel: NivelAlerta;
-  valorMinimo: number;
-  fenomeno: string;
-  mensaje: string;
-  activo: boolean;
-}
+export type { NivelAlerta, TipoSensor };
+export type ConfiguracionAlerta = ReglaAlerta;
+export type ConfiguracionAlertaRequest = ReglaAlertaRequest;

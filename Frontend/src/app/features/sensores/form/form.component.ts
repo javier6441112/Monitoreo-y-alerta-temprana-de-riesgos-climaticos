@@ -1,183 +1,105 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatIconModule } from '@angular/material/icon';
-import { SensorService, Sensor } from '../../../core/services/sensor/sensor.service';
+import { Comunidad, SensorRequest, TipoSensor } from '../../../core/models/api-contract.models';
+import { ComunidadService } from '../../../core/services/comunidad/comunidad.service';
+import { SensorService } from '../../../core/services/sensor/sensor.service';
 
 @Component({
   selector: 'app-sensores-form',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatSnackBarModule,
-    MatIconModule
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
-    <div class="form-container">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>
-            <h1>{{ isEdit ? '✏️ Editar Sensor' : '📡 Nuevo Sensor' }}</h1>
-          </mat-card-title>
-        </mat-card-header>
-        
-        <mat-card-content>
-          <form [formGroup]="sensorForm" (ngSubmit)="onSubmit()">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Nombre</mat-label>
-              <input matInput formControlName="nombre" placeholder="Ej: Sensor Temperatura 01">
-              <mat-error *ngIf="sensorForm.get('nombre')?.hasError('required')">
-                El nombre es requerido
-              </mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Tipo de Sensor</mat-label>
-              <mat-select formControlName="tipo">
-                <mat-option value="TEMPERATURA">Temperatura</mat-option>
-                <mat-option value="HUMEDAD">Humedad</mat-option>
-                <mat-option value="VIENTO">Viento</mat-option>
-                <mat-option value="LLUVIA">Lluvia</mat-option>
-                <mat-option value="NIVEL_RIO">Nivel de Río</mat-option>
-              </mat-select>
-              <mat-error *ngIf="sensorForm.get('tipo')?.hasError('required')">
-                El tipo es requerido
-              </mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Unidad</mat-label>
-              <input matInput formControlName="unidad" placeholder="Ej: °C, m, km/h">
-              <mat-error *ngIf="sensorForm.get('unidad')?.hasError('required')">
-                La unidad es requerida
-              </mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Comunidad ID</mat-label>
-              <input matInput type="number" formControlName="comunidadId" placeholder="Ej: 1">
-              <mat-error *ngIf="sensorForm.get('comunidadId')?.hasError('required')">
-                La comunidad es requerida
-              </mat-error>
-            </mat-form-field>
-
-            <div class="form-actions">
-              <button mat-button type="button" routerLink="/sensores">Cancelar</button>
-              <button mat-raised-button color="primary" type="submit" [disabled]="sensorForm.invalid">
-                <mat-icon>{{ isEdit ? 'save' : 'add' }}</mat-icon>
-                {{ isEdit ? 'Actualizar' : 'Crear' }}
-              </button>
-            </div>
-          </form>
-        </mat-card-content>
-      </mat-card>
-    </div>
+    <section class="form-page">
+      <a class="back-link" routerLink="/sensores">← Volver a sensores</a>
+      <header><p class="eyebrow">INVENTARIO DE DISPOSITIVOS</p><h1>{{ isEdit ? 'Editar sensor' : 'Registrar sensor' }}</h1><p>Identificación, ubicación y configuración de la estación de monitoreo.</p></header>
+      @if (error) { <div class="notice" role="alert">{{ error }}</div> }
+      @if (!communities.length && !communityLoading) { <div class="notice">No hay comunidades disponibles. Registra una comunidad antes de asociar este sensor.</div> }
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <section class="form-section"><h2>Identificación</h2><div class="fields">
+          <label>Nombre<input formControlName="nombre" placeholder="Ej. Pluviómetro zona norte"><small *ngIf="form.controls.nombre.touched && form.controls.nombre.invalid">El nombre es obligatorio.</small></label>
+          <label>Código único<input formControlName="codigo" placeholder="Ej. GT-IZB-014"><small *ngIf="form.controls.codigo.touched && form.controls.codigo.invalid">El código es obligatorio.</small></label>
+          <label>Tipo de sensor<select formControlName="tipo">@for (type of types; track type) {<option [value]="type">{{ type }}</option>}</select></label>
+          <label>Unidad de medida<input formControlName="unidad" placeholder="°C, mm, km/h"></label>
+          <label>Comunidad<select formControlName="comunidadId"><option [ngValue]="null" disabled>Seleccionar comunidad</option>@for (community of communities; track community.id) {<option [ngValue]="community.id">{{ community.nombre }} · {{ community.municipio }}</option>}</select></label>
+          <label>Fecha de instalación<input type="date" formControlName="fechaInstalacion"></label>
+        </div></section>
+        <section class="form-section"><h2>Ubicación y notas</h2><div class="fields">
+          <label>Latitud<input type="number" step="any" formControlName="latitud" placeholder="15.1234"></label>
+          <label>Longitud<input type="number" step="any" formControlName="longitud" placeholder="-90.1234"></label>
+          <label class="wide">Descripción<textarea rows="3" formControlName="descripcion" placeholder="Referencia del punto de instalación o condiciones del sitio"></textarea></label>
+        </div><label class="toggle"><input type="checkbox" formControlName="activo"> Sensor habilitado</label></section>
+        <footer><button class="button button-secondary" type="button" routerLink="/sensores">Cancelar</button><button class="button button-primary" type="submit" [disabled]="form.invalid || saving || communityLoading">{{ saving ? 'Guardando…' : (isEdit ? 'Guardar cambios' : 'Registrar sensor') }}</button></footer>
+      </form>
+    </section>
   `,
   styles: [`
-    .form-container {
-      max-width: 600px;
-      margin: 20px auto;
-    }
-    .full-width {
-      width: 100%;
-      margin-bottom: 16px;
-    }
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    h1 {
-      color: #1a237e;
-      margin: 0;
-    }
+    :host{display:block}.form-page{max-width:900px;margin:0 auto}.back-link{display:inline-block;margin-bottom:24px;color:var(--accent-dark);font-size:12px;font-weight:650;text-decoration:none}.form-page header{margin-bottom:22px}.eyebrow{margin:0 0 8px;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:1.2px}h1{margin:0;font-size:29px;color:var(--ink)}.form-page header p:last-child{margin:7px 0 0;color:var(--muted)}.form-section{padding:20px 0;border-top:1px solid var(--line)}.form-section h2{margin:0 0 18px;font-size:15px;color:var(--ink)}.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.fields label{display:grid;gap:7px;color:var(--muted);font-size:12px;font-weight:650}.fields input,.fields select,.fields textarea{box-sizing:border-box;width:100%;min-height:41px;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:white;color:var(--ink);font:inherit;font-weight:400}.fields textarea{resize:vertical}.fields small{color:var(--danger);font-size:10px}.wide{grid-column:1/-1}.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;color:var(--ink);font-size:12px}.toggle input{accent-color:var(--accent)}footer{display:flex;justify-content:flex-end;gap:10px;padding-top:18px;border-top:1px solid var(--line)}.button{min-height:39px;padding:8px 14px;border:1px solid transparent;border-radius:4px;font:inherit;font-size:12px;font-weight:650;cursor:pointer}.button:disabled{opacity:.5;cursor:not-allowed}.button-primary{background:var(--accent);color:#fff}.button-secondary{border-color:var(--line);background:#fff;color:var(--ink)}.notice{padding:12px 14px;margin:16px 0;border-left:3px solid #d69a2d;background:#fff5dc;color:#805b08;font-size:12px}@media(max-width:620px){.fields{grid-template-columns:1fr}.wide{grid-column:auto}h1{font-size:25px}}
   `]
 })
 export class FormComponent implements OnInit {
-  sensorForm: FormGroup;
-  isEdit = false;
+  form: FormGroup;
+  communities: Comunidad[] = [];
+  types: TipoSensor[] = ['TEMPERATURA', 'HUMEDAD', 'VIENTO', 'LLUVIA', 'NIVEL_RIO', 'RESERVORIO', 'HUMO', 'OTRO'];
   sensorId: number | null = null;
+  isEdit = false;
+  saving = false;
+  communityLoading = true;
+  error = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private sensorService: SensorService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private snackBar: MatSnackBar
-  ) {
-    this.sensorForm = this.fb.group({
-      nombre: ['', Validators.required],
-      tipo: ['', Validators.required],
+  constructor(fb: FormBuilder, private readonly route: ActivatedRoute, private readonly router: Router, private readonly sensorService: SensorService, private readonly communityService: ComunidadService) {
+    this.form = fb.group({
+      nombre: ['', [Validators.required, Validators.maxLength(120)]],
+      codigo: ['', [Validators.required, Validators.maxLength(50)]],
+      tipo: ['TEMPERATURA' as TipoSensor, Validators.required],
       unidad: ['', Validators.required],
-      comunidadId: [1, Validators.required]
+      comunidadId: [null as number | null, Validators.required],
+      latitud: [null as number | null],
+      longitud: [null as number | null],
+      fechaInstalacion: [''],
+      descripcion: [''],
+      activo: [true]
     });
   }
 
-  ngOnInit() {
-    this.route.params.subscribe(params => {
-      if (params['id']) {
-        this.isEdit = true;
-        this.sensorId = +params['id'];
-        this.loadSensor();
-      }
+  ngOnInit(): void {
+    this.communityService.getAll({ activo: true }).subscribe({
+      next: data => { this.communities = data; this.communityLoading = false; },
+      error: () => { this.communities = []; this.communityLoading = false; }
     });
-  }
-
-  loadSensor() {
-    if (this.sensorId) {
-      this.sensorService.getSensor(this.sensorId).subscribe(sensor => {
-        if (sensor) {
-          this.sensorForm.patchValue({
-            nombre: sensor.nombre,
-            tipo: sensor.tipo,
-            unidad: sensor.unidad,
-            comunidadId: sensor.comunidadId
-          });
-        }
+    const id = Number(this.route.snapshot.paramMap.get('id'));
+    if (Number.isInteger(id) && id > 0) {
+      this.sensorId = id;
+      this.isEdit = true;
+      this.sensorService.getSensor(id).subscribe({
+        next: sensor => this.form.patchValue(sensor),
+        error: () => this.error = 'No se pudo cargar el sensor solicitado.'
       });
     }
   }
 
-  onSubmit() {
-    if (this.sensorForm.invalid) return;
-
-    const sensorData = this.sensorForm.value;
-
-    if (this.isEdit && this.sensorId) {
-      this.sensorService.updateSensor(this.sensorId, sensorData).subscribe({
-        next: () => {
-          this.snackBar.open('Sensor actualizado correctamente', 'Cerrar', { duration: 3000 });
-          this.router.navigate(['/sensores']);
-        },
-        error: () => {
-          this.snackBar.open('Error al actualizar el sensor', 'Cerrar', { duration: 3000 });
-        }
-      });
-    } else {
-      this.sensorService.createSensor(sensorData).subscribe({
-        next: () => {
-          this.snackBar.open('Sensor creado correctamente', 'Cerrar', { duration: 3000 });
-          this.router.navigate(['/sensores']);
-        },
-        error: () => {
-          this.snackBar.open('Error al crear el sensor', 'Cerrar', { duration: 3000 });
-        }
-      });
-    }
+  save(): void {
+    if (this.form.invalid || this.saving) return;
+    const value = this.form.getRawValue();
+    const request: SensorRequest = {
+      nombre: value.nombre!,
+      codigo: value.codigo!,
+      tipo: value.tipo!,
+      unidad: value.unidad!,
+      comunidadId: value.comunidadId!,
+      latitud: value.latitud,
+      longitud: value.longitud,
+      fechaInstalacion: value.fechaInstalacion || null,
+      descripcion: value.descripcion ?? '',
+      activo: value.activo ?? true
+    };
+    this.saving = true;
+    this.error = '';
+    const operation = this.sensorId ? this.sensorService.updateSensor(this.sensorId, request) : this.sensorService.createSensor(request);
+    operation.subscribe({
+      next: () => { this.saving = false; void this.router.navigate(['/sensores']); },
+      error: () => { this.saving = false; this.error = 'No se pudo guardar. Revisa el código, la comunidad y la conexión con la API.'; }
+    });
   }
 }

@@ -2,17 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { FiltrosApi, Sensor, SensorRequest } from '../../models/api-contract.models';
+import { toApiParams } from '../api-params';
 
-export interface Sensor {
-  id: number;
-  nombre: string;
-  tipo: 'TEMPERATURA' | 'HUMEDAD' | 'VIENTO' | 'LLUVIA' | 'NIVEL_RIO';
-  unidad: string;
-  valorActual: number;
-  activo: boolean;
-  comunidadId: number;
-  ultimaLectura: string | null;
-}
+export type { Sensor } from '../../models/api-contract.models';
 
 @Injectable({
   providedIn: 'root'
@@ -22,19 +15,19 @@ export class SensorService {
 
   constructor(private http: HttpClient) {}
 
-  getSensores(): Observable<Sensor[]> {
-    return this.http.get<Sensor[]>(this.endpoint);
+  getSensores(filters: FiltrosApi = {}): Observable<Sensor[]> {
+    return this.http.get<Sensor[]>(this.endpoint, { params: toApiParams(filters) });
   }
 
   getSensor(id: number): Observable<Sensor | undefined> {
     return this.http.get<Sensor>(`${this.endpoint}/${id}`);
   }
 
-  createSensor(sensor: Omit<Sensor, 'id' | 'valorActual' | 'ultimaLectura'>): Observable<Sensor> {
+  createSensor(sensor: SensorRequest): Observable<Sensor> {
     return this.http.post<Sensor>(this.endpoint, sensor);
   }
 
-  updateSensor(id: number, sensor: Partial<Sensor>): Observable<Sensor> {
+  updateSensor(id: number, sensor: Partial<SensorRequest>): Observable<Sensor> {
     return this.http.put<Sensor>(`${this.endpoint}/${id}`, sensor);
   }
 

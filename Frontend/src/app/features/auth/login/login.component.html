@@ -1,17 +1,18 @@
-<div class="login-container">
-  <mat-card class="login-card">
-    <mat-card-header>
-      <mat-card-title>
-        <h1>🌊 Monitoreo Climático</h1>
-        <h2>Iniciar Sesión</h2>
-      </mat-card-title>
-    </mat-card-header>
-    
-    <mat-card-content>
+<main class="login-container">
+  <aside class="brand-panel" aria-label="Sistema de monitoreo climático">
+    <div class="brand-lockup"><span class="brand-mark">W</span><span>WEATHERRISK</span></div>
+    <div class="brand-copy"><p class="eyebrow">PLATAFORMA DE VIGILANCIA</p><h1>Monitoreo y alerta temprana</h1><p>Acceso seguro para la operación y consulta de riesgos climáticos.</p></div>
+    <div class="brand-bottom"><span class="signal-dot"></span><span>Centro de monitoreo</span><span class="brand-version">SISTEMA DE GESTIÓN</span></div>
+  </aside>
+  <section class="login-panel" aria-labelledby="login-title">
+    <div class="login-content">
+      <p class="eyebrow">ACCESO AL SISTEMA</p>
+      <h2 id="login-title">Iniciar sesión</h2>
+      <p class="login-lead">Ingresa con las credenciales asignadas a tu cuenta.</p>
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Usuario</mat-label>
-          <input matInput formControlName="username" placeholder="admin">
+          <input matInput formControlName="username" autocomplete="username">
           <mat-icon matPrefix>person</mat-icon>
           <mat-error *ngIf="loginForm.get('username')?.hasError('required')">
             El usuario es requerido
@@ -20,7 +21,7 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Contraseña</mat-label>
-          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="123456">
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="current-password">
           <mat-icon matPrefix>lock</mat-icon>
           <button mat-icon-button matSuffix type="button" (click)="togglePasswordVisibility()">
             <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
@@ -41,11 +42,8 @@
           <span>{{ error }}</span>
         </div>
 
-        <div class="login-hint">
-          <p>Credenciales de prueba:</p>
-          <p><strong>Usuario:</strong> admin | <strong>Contraseña:</strong> 123456</p>
-        </div>
       </form>
-    </mat-card-content>
-  </mat-card>
-</div>
+    </div>
+    <footer class="login-footer">Sistema de Monitoreo y Alerta Temprana <span>·</span> Fase 2</footer>
+  </section>
+</main>
