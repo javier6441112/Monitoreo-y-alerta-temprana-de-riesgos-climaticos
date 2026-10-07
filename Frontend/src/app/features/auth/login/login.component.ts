@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -35,11 +35,12 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
-      username: ['admin', Validators.required],
-      password: ['123456', Validators.required]
+      username: ['', Validators.required],
+      password: ['', Validators.required]
     });
   }
 
@@ -52,15 +53,16 @@ export class LoginComponent {
     this.loading = true;
     this.error = '';
 
-    const { username, password } = this.loginForm.value;
+    const { username, password } = this.loginForm.getRawValue();
     this.authService.login(username, password).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/dashboard']);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/dashboard');
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.message || 'Error al iniciar sesión';
+        this.error = err.error?.detail || err.error?.message || 'No fue posible iniciar sesión. Verifica tus credenciales y la conexión con la API.';
       }
     });
   }

@@ -20,7 +20,7 @@ export class Signalr {
   constructor() {
     this.connection = new HubConnectionBuilder()
       .withUrl(environment.signalRUrl, {
-        accessTokenFactory: () => localStorage.getItem('auth_token') ?? ''
+        accessTokenFactory: () => typeof localStorage === 'undefined' ? '' : localStorage.getItem('auth_token') ?? ''
       })
       .withAutomaticReconnect()
       .configureLogging(environment.production ? LogLevel.Error : LogLevel.Information)

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Lectura } from '../../models/lectura.model';
+import { FiltrosApi, Lectura } from '../../models/api-contract.models';
+import { toApiParams } from '../api-params';
 
 export interface NuevaLectura {
   sensorId: number;
@@ -17,11 +18,8 @@ export class LecturaService {
 
   constructor(private http: HttpClient) {}
 
-  getLecturas(sensorId?: number): Observable<Lectura[]> {
-    let params = new HttpParams();
-    if (sensorId) {
-      params = params.set('sensorId', sensorId);
-    }
+  getLecturas(sensorId?: number, filters: FiltrosApi = {}): Observable<Lectura[]> {
+    const params = toApiParams({ ...filters, ...(sensorId ? { sensorId } : {}) });
     return this.http.get<Lectura[]>(this.endpoint, { params });
   }
 

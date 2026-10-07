@@ -12,6 +12,9 @@ import { MatTableModule } from '@angular/material/table';
 import { Lectura } from '../../core/models/lectura.model';
 import { Sensor, SensorService } from '../../core/services/sensor/sensor.service';
 import { LecturaService } from '../../core/services/lectura/lectura.service';
+import { Comunidad } from '../../core/models/api-contract.models';
+import { ComunidadService } from '../../core/services/comunidad/comunidad.service';
+import { AuthService } from '../../core/services/auth/auth.service';
 
 @Component({
   selector: 'app-lecturas',
@@ -33,11 +36,11 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
       <div class="page-header">
         <div>
           <h1>Lecturas de sensores</h1>
-          <p>Registra valores para simular el monitoreo y evaluar alertas.</p>
+          <p>Registra una lectura operativa y consulta el histórico de sensores.</p>
         </div>
       </div>
 
-      <mat-card class="register-card">
+      <mat-card *ngIf="canOperate" class="register-card">
         <mat-card-header>
           <mat-card-title>Registrar lectura</mat-card-title>
           <mat-card-subtitle>El sistema guardará la lectura y evaluará automáticamente el nivel de riesgo.</mat-card-subtitle>
@@ -46,7 +49,7 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
           <form [formGroup]="readingForm" (ngSubmit)="submit()" class="reading-form">
             <mat-form-field appearance="outline">
               <mat-label>Sensor</mat-label>
-              <mat-select formControlName="sensorId" (selectionChange)="loadReadings()">
+              <mat-select formControlName="sensorId">
                 <mat-option *ngFor="let sensor of sensores" [value]="sensor.id">
                   {{ sensor.nombre }} ({{ sensor.unidad }})
                 </mat-option>
@@ -74,6 +77,24 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
           <mat-card-title>Lecturas registradas</mat-card-title>
         </mat-card-header>
         <mat-card-content>
+          <div class="history-filters" [formGroup]="readingForm">
+            <mat-form-field appearance="outline">
+              <mat-label>Comunidad</mat-label>
+              <mat-select formControlName="comunidadId" (selectionChange)="loadReadings()">
+                <mat-option [value]="null">Todas las comunidades</mat-option>
+                <mat-option *ngFor="let community of communities" [value]="community.id">{{ community.nombre }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Sensor</mat-label>
+              <mat-select formControlName="filtroSensorId" (selectionChange)="loadReadings()">
+                <mat-option [value]="null">Todos los sensores</mat-option>
+                <mat-option *ngFor="let sensor of filteredSensors" [value]="sensor.id">{{ sensor.nombre }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <label class="date-field">Desde<input type="date" formControlName="desde" (change)="loadReadings()"></label>
+            <label class="date-field">Hasta<input type="date" formControlName="hasta" (change)="loadReadings()"></label>
+          </div>
           <div class="table-wrapper">
             <table mat-table [dataSource]="lecturas">
               <ng-container matColumnDef="id">
@@ -84,6 +105,10 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
                 <th mat-header-cell *matHeaderCellDef>Sensor</th>
                 <td mat-cell *matCellDef="let lectura">{{ sensorName(lectura.sensorId) }}</td>
               </ng-container>
+              <ng-container matColumnDef="comunidadId">
+                <th mat-header-cell *matHeaderCellDef>Comunidad</th>
+                <td mat-cell *matCellDef="let lectura">{{ communityName(lectura.comunidadId) }}</td>
+              </ng-container>
               <ng-container matColumnDef="valor">
                 <th mat-header-cell *matHeaderCellDef>Valor</th>
                 <td mat-cell *matCellDef="let lectura">{{ lectura.valor }} {{ sensorUnit(lectura.sensorId) }}</td>
@@ -91,6 +116,10 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
               <ng-container matColumnDef="fechaHora">
                 <th mat-header-cell *matHeaderCellDef>Fecha y hora</th>
                 <td mat-cell *matCellDef="let lectura">{{ lectura.fechaHora | date:'short' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="estadoSensor">
+                <th mat-header-cell *matHeaderCellDef>Estado del sensor</th>
+                <td mat-cell *matCellDef="let lectura">{{ lectura.estadoSensor === false ? 'Inactivo' : 'Activo' }}</td>
               </ng-container>
               <tr mat-header-row *matHeaderRowDef="columns"></tr>
               <tr mat-row *matRowDef="let row; columns: columns"></tr>
@@ -102,16 +131,20 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
     </div>
   `,
   styles: [`
-    .lecturas-container { max-width: 1100px; margin: 0 auto; }
+    .lecturas-container { max-width: 1400px; margin: 0 auto; }
     .page-header { margin-bottom: 20px; }
-    h1 { margin: 0 0 6px; color: #1a237e; }
-    .page-header p { margin: 0; color: #5f6368; }
+    h1 { margin: 0 0 6px; color: var(--ink); }
+    .page-header p { margin: 0; color: var(--muted); }
     mat-card { margin-bottom: 20px; }
-    mat-card-title { color: #1a237e; }
+    mat-card-title { color: var(--ink); }
     .reading-form { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 16px; }
     .reading-form mat-form-field { flex: 1 1 260px; }
     .reading-form button { min-height: 56px; }
     .table-wrapper { overflow-x: auto; }
+    .history-filters { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:12px 0; }
+    .history-filters mat-form-field { flex:1 1 180px; }
+    .date-field { display:grid; gap:6px; color:var(--muted); font-size:11px; font-weight:650; }
+    .date-field input { min-height:39px; padding:7px 9px; border:1px solid var(--line); border-radius:4px; color:var(--ink); font:inherit; }
     table { width: 100%; }
     .empty { padding: 24px 0; color: #6b7280; text-align: center; }
     @media (max-width: 600px) { .lecturas-container { width: 100%; } .reading-form { display: block; } .reading-form mat-form-field, .reading-form button { width: 100%; margin-bottom: 12px; } }
@@ -119,10 +152,17 @@ import { LecturaService } from '../../core/services/lectura/lectura.service';
 })
 export class LecturasComponent implements OnInit {
   sensores: Sensor[] = [];
+  allSensors: Sensor[] = [];
+  communities: Comunidad[] = [];
   lecturas: Lectura[] = [];
-  columns = ['id', 'sensorId', 'valor', 'fechaHora'];
+  columns = ['id', 'sensorId', 'comunidadId', 'valor', 'fechaHora', 'estadoSensor'];
   saving = false;
   selectedUnit = '';
+  get filteredSensors(): Sensor[] {
+    const communityId = this.readingForm.controls.comunidadId.value;
+    return communityId ? this.allSensors.filter(sensor => sensor.comunidadId === communityId) : this.allSensors;
+  }
+  get canOperate(): boolean { return this.authService.hasRole(['ADMIN', 'OPERADOR']); }
 
   readingForm;
 
@@ -130,17 +170,22 @@ export class LecturasComponent implements OnInit {
     private formBuilder: FormBuilder,
     private sensorService: SensorService,
     private lecturaService: LecturaService,
+    private communityService: ComunidadService,
+    private authService: AuthService,
     private snackBar: MatSnackBar
   ) {
     this.readingForm = this.formBuilder.group({
       sensorId: [null as number | null, Validators.required],
-      valor: [null as number | null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]]
+      valor: [null as number | null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+      comunidadId: [null as number | null], filtroSensorId: [null as number | null], desde: [''], hasta: ['']
     });
   }
 
   ngOnInit(): void {
+    this.communityService.getAll().subscribe({ next: communities => this.communities = communities, error: () => this.communities = [] });
     this.sensorService.getSensores().subscribe({
       next: sensores => {
+        this.allSensors = sensores;
         this.sensores = sensores.filter(sensor => sensor.activo);
         if (this.sensores.length) {
           this.readingForm.controls.sensorId.setValue(this.sensores[0].id);
@@ -153,9 +198,9 @@ export class LecturasComponent implements OnInit {
   }
 
   loadReadings(): void {
-    const sensorId = this.readingForm.controls.sensorId.value ?? undefined;
+    const { comunidadId, filtroSensorId, desde, hasta } = this.readingForm.getRawValue();
     this.updateUnit();
-    this.lecturaService.getLecturas(sensorId ?? undefined).subscribe({
+    this.lecturaService.getLecturas(filtroSensorId ?? undefined, { comunidadId: comunidadId ?? undefined, desde: desde || undefined, hasta: hasta || undefined }).subscribe({
       next: lecturas => this.lecturas = lecturas,
       error: () => this.snackBar.open('No se pudieron cargar las lecturas', 'Cerrar', { duration: 3000 })
     });
@@ -185,6 +230,10 @@ export class LecturasComponent implements OnInit {
 
   sensorUnit(sensorId: number): string {
     return this.sensores.find(sensor => sensor.id === sensorId)?.unidad ?? '';
+  }
+
+  communityName(communityId?: number): string {
+    return this.communities.find(community => community.id === communityId)?.nombre ?? (communityId ? `Comunidad ${communityId}` : '—');
   }
 
   private updateUnit(): void {

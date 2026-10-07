@@ -1,4 +1,16 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+	--ink: #19332f;
+	--muted: #6c7d77;
+	--accent: #087f71;
+	--accent-dark: #09685d;
+	--canvas: #f4f7f5;
+	--line: #dce5e0;
+	--line-soft: #edf1ef;
+	--danger: #b94332;
+}
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 14px; }
+button, input, select, textarea { font: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid #3aa99580; outline-offset: 2px; }
+::selection { background: #bfe4d8; color: #153c35; }

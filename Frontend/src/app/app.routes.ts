@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth/auth-guard';
+import { roleGuard } from './core/guards/auth/role-guard';
 
 export const routes: Routes = [
   {
@@ -8,10 +10,15 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./core/layout/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
     children: [
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      {
+        path: 'comunidades',
+        loadComponent: () => import('./features/comunidades/comunidades.component').then(m => m.ComunidadesComponent)
       },
       {
         path: 'sensores',
@@ -34,7 +41,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/alertas/list/list.component').then(m => m.ListComponent)
       },
       {
+        path: 'usuarios',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () => import('./features/usuarios/usuarios.component').then(m => m.UsuariosComponent)
+      },
+      {
+        path: 'bitacora',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () => import('./features/bitacora/bitacora.component').then(m => m.BitacoraComponent)
+      },
+      {
         path: 'configuracion-alertas',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
         loadComponent: () => import('./features/configuracion-alertas/configuracion-alertas.component').then(m => m.ConfiguracionAlertasComponent)
       },
       {
