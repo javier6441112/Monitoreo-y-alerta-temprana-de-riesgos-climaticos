@@ -1,28 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\HP\\Desktop\\UMG\\OCTAVO CICLO\\DESARROLLO WEB\\proyecto\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj": {}
+    "C:\\Users\\jisaa\\Desktop\\universidad\\ciclo8\\DesarrolloWeb\\Proyecto1\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\HP\\Desktop\\UMG\\OCTAVO CICLO\\DESARROLLO WEB\\proyecto\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj": {
+    "C:\\Users\\jisaa\\Desktop\\universidad\\ciclo8\\DesarrolloWeb\\Proyecto1\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\HP\\Desktop\\UMG\\OCTAVO CICLO\\DESARROLLO WEB\\proyecto\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj",
+        "projectUniqueName": "C:\\Users\\jisaa\\Desktop\\universidad\\ciclo8\\DesarrolloWeb\\Proyecto1\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj",
         "projectName": "WeatherRisk.Api",
-        "projectPath": "C:\\Users\\HP\\Desktop\\UMG\\OCTAVO CICLO\\DESARROLLO WEB\\proyecto\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj",
-        "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\HP\\Desktop\\UMG\\OCTAVO CICLO\\DESARROLLO WEB\\proyecto\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\obj\\",
+        "projectPath": "C:\\Users\\jisaa\\Desktop\\universidad\\ciclo8\\DesarrolloWeb\\Proyecto1\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\WeatherRisk.Api.csproj",
+        "packagesPath": "C:\\Users\\jisaa\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\jisaa\\Desktop\\universidad\\ciclo8\\DesarrolloWeb\\Proyecto1\\Monitoreo-y-alerta-temprana-de-riesgos-climaticos\\Backend\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config"
+          "C:\\Users\\jisaa\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
         "frameworks": {
           "net10.0": {
             "framework": "net10.0",
@@ -40,7 +39,7 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.300"
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net10.0": {
@@ -85,7 +84,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

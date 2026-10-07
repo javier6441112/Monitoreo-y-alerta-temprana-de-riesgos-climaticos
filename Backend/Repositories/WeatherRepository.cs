@@ -15,8 +15,8 @@ public class WeatherRepository : IWeatherRepository
     {
         _usuarios = new List<Usuario>
         {
-            new Usuario { Id = 1, Username = "admin", Nombre = "Administrador", Rol = "ADMIN", PasswordHash = "admin123" },
-            new Usuario { Id = 2, Username = "operador", Nombre = "Operador", Rol = "OPERADOR", PasswordHash = "operador123" }
+            new Usuario { Id = 1, Username = "admin", Nombre = "Administrador", Rol = "ADMIN", PasswordHash = "PBKDF2$100000$hmOdcEh1OZzlNQnvqDo0rw==$GtGagtChy2EN2eAzY2LP7ayAVaGWMAnCwxnRA5mlezM=" },
+            new Usuario { Id = 2, Username = "operador", Nombre = "Operador", Rol = "OPERADOR", PasswordHash = "PBKDF2$100000$sWcBpI22Qr1FxRrLUGBTmg==$PL2KOrTqUA4Bt9/nC77wnkp3hp2cEdKQrhRF1dBK+FA=" }
         };
 
         _sensores = new List<Sensor>

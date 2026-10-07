@@ -1,30 +1,6 @@
 services:
-  db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: climate-risk-db
-    restart: unless-stopped
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-desa123$}
-      MSSQL_PID: Developer
-    ports:
-      - "${DB_PORT:-1433}:1433"
-    volumes:
-      - ./db:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $$MSSQL_SA_PASSWORD -C -Q \"SELECT 1\""]
-      interval: 15s
-      timeout: 20s
-      retries: 10
-      start_period: 30s
-    networks:
-      - climate-risk-network
-
   db-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    depends_on:
-      db:
-        condition: service_healthy
     entrypoint: ["/bin/bash", "-c"]
     command: /docker-entrypoint-initdb.d/init-db.sh
     environment:
@@ -39,22 +15,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: climate-risk-api
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
       db-init:
         condition: service_completed_successfully
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ConnectionStrings__DefaultConnection: "Server=climate-risk-db,1433;Database=${DB_NAME:-ClimateRiskDb};User Id=sa;Password=${MSSQL_SA_PASSWORD:-desa123$};TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=${DB_NAME:-ClimateRiskDb};User Id=sa;Password=${MSSQL_SA_PASSWORD:-desa123$};TrustServerCertificate=True;Encrypt=False"
     ports:
-      - "${API_PORT:-5000}:8080"
+      - "${BACKEND_API_PORT:-5001}:8080"
     networks:
       - climate-risk-network
 
 networks:
   climate-risk-network:
+    external: true
     name: climate-risk-network
-    driver: bridge

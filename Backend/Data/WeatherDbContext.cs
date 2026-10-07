@@ -17,6 +17,7 @@ public class WeatherDbContext : DbContext
     public DbSet<Bitacora> Bitacora { get; set; }
     public DbSet<ConfiguracionAlerta> ConfiguracionAlertas { get; set; }
     public DbSet<Comunidad> Comunidades { get; set; }
+    public DbSet<RevokedToken> RevokedTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +43,14 @@ public class WeatherDbContext : DbContext
             entity.Property(x => x.Nombre).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Rol).HasMaxLength(50).IsRequired();
             entity.Property(x => x.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        modelBuilder.Entity<RevokedToken>(entity =>
+        {
+            entity.ToTable("RevokedTokens");
+            entity.HasKey(x => x.TokenId);
+            entity.Property(x => x.TokenId).HasMaxLength(64);
+            entity.Property(x => x.ExpiresAtUtc).HasColumnType("datetime2");
         });
 
         modelBuilder.Entity<Sensor>(entity =>
@@ -110,8 +119,8 @@ public class WeatherDbContext : DbContext
         });
 
         modelBuilder.Entity<Usuario>().HasData(
-            new Usuario { Id = 1, Username = "admin", PasswordHash = "admin123", Nombre = "Administrador", Rol = "ADMIN", Activo = true, FechaCreacion = DateTime.UtcNow },
-            new Usuario { Id = 2, Username = "operador", PasswordHash = "operador123", Nombre = "Operador", Rol = "OPERADOR", Activo = true, FechaCreacion = DateTime.UtcNow }
+            new Usuario { Id = 1, Username = "admin", PasswordHash = "PBKDF2$100000$hmOdcEh1OZzlNQnvqDo0rw==$GtGagtChy2EN2eAzY2LP7ayAVaGWMAnCwxnRA5mlezM=", Nombre = "Administrador", Rol = "ADMIN", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new Usuario { Id = 2, Username = "operador", PasswordHash = "PBKDF2$100000$sWcBpI22Qr1FxRrLUGBTmg==$PL2KOrTqUA4Bt9/nC77wnkp3hp2cEdKQrhRF1dBK+FA=", Nombre = "Operador", Rol = "OPERADOR", Activo = true, FechaCreacion = DateTime.UtcNow }
         );
 
         modelBuilder.Entity<Sensor>().HasData(

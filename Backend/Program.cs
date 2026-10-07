@@ -35,6 +35,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var tokenId = context.SecurityToken.Id;
+                if (string.IsNullOrWhiteSpace(tokenId))
+                {
+                    context.Fail("El token no tiene identificador de sesión.");
+                    return;
+                }
+
+                var revocations = context.HttpContext.RequestServices.GetRequiredService<TokenRevocationService>();
+                if (await revocations.IsRevokedAsync(tokenId, context.HttpContext.RequestAborted))
+                    context.Fail("La sesión fue cerrada.");
+            }
+        };
     });
 
 builder.Services.AddControllers();
@@ -69,6 +85,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddScoped<IWeatherRepository, SqlWeatherRepository>();
+builder.Services.AddScoped<TokenRevocationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsuariosService, UsuariosService>();
 builder.Services.AddScoped<ISensoresService, SensoresService>();

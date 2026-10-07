@@ -56,6 +56,11 @@ export class AuthService {
   }
 
   logout(): void {
+    const token = this.getToken();
+    if (token) {
+      this.http.post<void>(`${environment.apiUrl}/auth/logout`, {}).subscribe({ error: () => undefined });
+    }
+
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);

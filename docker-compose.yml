@@ -3,7 +3,6 @@ services:
     build:
       context: ./BaseDeDatos
       dockerfile: Dockerfile
-    container_name: climate-risk-db
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
@@ -27,14 +26,13 @@ services:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-    container_name: climate-risk-api
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ConnectionStrings__DefaultConnection: "Server=climate-risk-db,1433;Database=${DB_NAME:-ClimateRiskDb};User Id=sa;Password=${MSSQL_SA_PASSWORD:-desa123$};TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=${DB_NAME:-ClimateRiskDb};User Id=sa;Password=${MSSQL_SA_PASSWORD:-desa123$};TrustServerCertificate=True;Encrypt=False"
     ports:
       - "${API_PORT:-5000}:8080"
     networks:
@@ -44,7 +42,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: climate-risk-frontend
     restart: unless-stopped
     depends_on:
       - api

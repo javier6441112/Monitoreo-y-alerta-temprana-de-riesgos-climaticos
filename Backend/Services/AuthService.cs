@@ -32,6 +32,7 @@ public sealed class AuthService : IAuthService
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             new Claim(ClaimTypes.Name, usuario.Username),
             new Claim(ClaimTypes.Role, usuario.Rol)
         };

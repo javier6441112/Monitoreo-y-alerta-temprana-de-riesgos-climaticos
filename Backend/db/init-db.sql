@@ -23,6 +23,15 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.RevokedTokens', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.RevokedTokens (
+        TokenId NVARCHAR(64) NOT NULL PRIMARY KEY,
+        ExpiresAtUtc DATETIME2 NOT NULL
+    );
+END;
+GO
+
 IF OBJECT_ID(N'dbo.Usuarios', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Usuarios (
@@ -154,15 +163,25 @@ GO
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Username = 'admin')
 BEGIN
     INSERT INTO dbo.Usuarios (Username, PasswordHash, Nombre, Rol, Activo, FechaCreacion)
-    VALUES ('admin', 'PBKDF2$100000$QHRT0g==$', 'Administrador', 'ADMIN', 1, SYSUTCDATETIME());
+    VALUES ('admin', 'PBKDF2$100000$hmOdcEh1OZzlNQnvqDo0rw==$GtGagtChy2EN2eAzY2LP7ayAVaGWMAnCwxnRA5mlezM=', 'Administrador', 'ADMIN', 1, SYSUTCDATETIME());
 END;
+GO
+
+UPDATE dbo.Usuarios
+SET PasswordHash = 'PBKDF2$100000$hmOdcEh1OZzlNQnvqDo0rw==$GtGagtChy2EN2eAzY2LP7ayAVaGWMAnCwxnRA5mlezM='
+WHERE Username = 'admin' AND PasswordHash IN ('admin123', 'PBKDF2$100000$QHRT0g==$');
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Username = 'operador')
 BEGIN
     INSERT INTO dbo.Usuarios (Username, PasswordHash, Nombre, Rol, Activo, FechaCreacion)
-    VALUES ('operador', 'PBKDF2$100000$QHRT0g==$', 'Operador', 'OPERADOR', 1, SYSUTCDATETIME());
+    VALUES ('operador', 'PBKDF2$100000$sWcBpI22Qr1FxRrLUGBTmg==$PL2KOrTqUA4Bt9/nC77wnkp3hp2cEdKQrhRF1dBK+FA=', 'Operador', 'OPERADOR', 1, SYSUTCDATETIME());
 END;
+GO
+
+UPDATE dbo.Usuarios
+SET PasswordHash = 'PBKDF2$100000$sWcBpI22Qr1FxRrLUGBTmg==$PL2KOrTqUA4Bt9/nC77wnkp3hp2cEdKQrhRF1dBK+FA='
+WHERE Username = 'operador' AND PasswordHash IN ('operador123', 'PBKDF2$100000$QHRT0g==$');
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Sensores)
