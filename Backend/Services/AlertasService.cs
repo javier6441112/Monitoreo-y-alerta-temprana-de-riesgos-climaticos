@@ -28,6 +28,7 @@ public sealed class AlertasService : IAlertasService
         SensorId = alerta.SensorId,
         ValorDetectado = alerta.ValorDetectado,
         FechaHora = alerta.FechaHora,
+        Estado = alerta.Estado,
         Activa = alerta.Activa
     };
 }

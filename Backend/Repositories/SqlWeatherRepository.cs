@@ -15,8 +15,18 @@ public class SqlWeatherRepository : IWeatherRepository
 
     public async Task<List<Usuario>> GetUsuariosAsync() => await _context.Usuarios.ToListAsync();
 
+    public async Task<Usuario?> GetUsuarioByIdAsync(int id) =>
+        await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
+
     public async Task<Usuario?> GetUsuarioByUsernameAsync(string username) =>
         await _context.Usuarios.FirstOrDefaultAsync(u => u.Username == username);
+
+    public async Task<Usuario> CreateUsuarioAsync(Usuario usuario)
+    {
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+        return usuario;
+    }
 
     public async Task<List<Sensor>> GetSensoresAsync() => await _context.Sensores.OrderBy(s => s.Id).ToListAsync();
 
@@ -58,18 +68,23 @@ public class SqlWeatherRepository : IWeatherRepository
         return true;
     }
 
-    public async Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? fechaInicio = null, DateTime? fechaFin = null)
+    public async Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null)
     {
-        var query = _context.LecturasSensores.AsQueryable();
+        var query = _context.LecturasSensores
+            .Include(l => l.Sensor)
+            .AsQueryable();
 
         if (sensorId.HasValue)
             query = query.Where(l => l.SensorId == sensorId.Value);
 
-        if (fechaInicio.HasValue)
-            query = query.Where(l => l.FechaHora >= fechaInicio.Value);
+        if (comunidadId.HasValue)
+            query = query.Where(l => l.Sensor!.ComunidadId == comunidadId.Value);
 
-        if (fechaFin.HasValue)
-            query = query.Where(l => l.FechaHora <= fechaFin.Value);
+        if (desde.HasValue)
+            query = query.Where(l => l.FechaHora >= desde.Value);
+
+        if (hasta.HasValue)
+            query = query.Where(l => l.FechaHora <= hasta.Value);
 
         return await query.OrderByDescending(l => l.FechaHora).ToListAsync();
     }

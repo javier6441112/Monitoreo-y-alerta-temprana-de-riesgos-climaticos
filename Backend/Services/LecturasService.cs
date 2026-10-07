@@ -22,8 +22,8 @@ public sealed class LecturasService : ILecturasService
         _hubContext = hubContext;
     }
 
-    public async Task<List<LecturaDto>> GetAllAsync(int? sensorId, DateTime? fechaInicio, DateTime? fechaFin) =>
-        (await _repository.GetLecturasAsync(sensorId, fechaInicio, fechaFin))
+    public async Task<List<LecturaDto>> GetAllAsync(int? sensorId, int? comunidadId, DateTime? desde, DateTime? hasta) =>
+        (await _repository.GetLecturasAsync(sensorId, desde, hasta, comunidadId))
             .Select(Map)
             .ToList();
 
@@ -54,7 +54,11 @@ public sealed class LecturasService : ILecturasService
     {
         Id = lectura.Id,
         SensorId = lectura.SensorId,
+        SensorNombre = lectura.Sensor?.Nombre ?? string.Empty,
+        ComunidadId = lectura.Sensor?.ComunidadId ?? 0,
+        FechaHora = lectura.FechaHora,
         Valor = lectura.Valor,
-        FechaHora = lectura.FechaHora
+        Unidad = lectura.Sensor?.Unidad ?? string.Empty,
+        EstadoSensor = lectura.Sensor?.Activo == true ? "ACTIVO" : "INACTIVO"
     };
 }

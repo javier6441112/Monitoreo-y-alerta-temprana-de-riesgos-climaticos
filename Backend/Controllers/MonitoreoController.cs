@@ -17,6 +17,7 @@ public class MonitoreoController : ControllerBase
     }
 
     [HttpPost("reiniciar")]
+    [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult> Reiniciar()
     {
         var username = User.Identity?.Name ?? "desconocido";

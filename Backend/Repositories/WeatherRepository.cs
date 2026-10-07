@@ -57,8 +57,18 @@ public class WeatherRepository : IWeatherRepository
 
     public Task<List<Usuario>> GetUsuariosAsync() => Task.FromResult(_usuarios);
 
+    public Task<Usuario?> GetUsuarioByIdAsync(int id) =>
+        Task.FromResult(_usuarios.FirstOrDefault(u => u.Id == id));
+
     public Task<Usuario?> GetUsuarioByUsernameAsync(string username) =>
         Task.FromResult(_usuarios.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)));
+
+    public Task<Usuario> CreateUsuarioAsync(Usuario usuario)
+    {
+        usuario.Id = _usuarios.Count > 0 ? _usuarios.Max(u => u.Id) + 1 : 1;
+        _usuarios.Add(usuario);
+        return Task.FromResult(usuario);
+    }
 
     public Task<List<Sensor>> GetSensoresAsync() => Task.FromResult(_sensores);
 
@@ -96,18 +106,21 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult(true);
     }
 
-    public Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? fechaInicio = null, DateTime? fechaFin = null)
+    public Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null)
     {
         var result = _lecturas.AsEnumerable();
 
         if (sensorId.HasValue)
             result = result.Where(l => l.SensorId == sensorId.Value);
 
-        if (fechaInicio.HasValue)
-            result = result.Where(l => l.FechaHora >= fechaInicio.Value);
+        if (comunidadId.HasValue)
+            result = result.Where(l => l.Sensor?.ComunidadId == comunidadId.Value);
 
-        if (fechaFin.HasValue)
-            result = result.Where(l => l.FechaHora <= fechaFin.Value);
+        if (desde.HasValue)
+            result = result.Where(l => l.FechaHora >= desde.Value);
+
+        if (hasta.HasValue)
+            result = result.Where(l => l.FechaHora <= hasta.Value);
 
         return Task.FromResult(result.OrderByDescending(l => l.FechaHora).ToList());
     }

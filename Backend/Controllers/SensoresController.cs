@@ -7,7 +7,7 @@ namespace WeatherRisk.Api.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/sensores")]
 public class SensoresController : ControllerBase
 {
     private readonly ISensoresService _sensoresService;
@@ -18,9 +18,14 @@ public class SensoresController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<SensorDto>>> GetAll()
+    public async Task<ActionResult<List<SensorDto>>> GetAll(
+        [FromQuery] string? codigo,
+        [FromQuery] string? tipo,
+        [FromQuery] bool? activo,
+        [FromQuery] int? comunidadId,
+        [FromQuery] string? buscar)
     {
-        var sensores = await _sensoresService.GetAllAsync();
+        var sensores = await _sensoresService.GetAllAsync(codigo, tipo, activo, comunidadId, buscar);
         return Ok(sensores);
     }
 
@@ -35,16 +40,18 @@ public class SensoresController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "ADMIN, OPERADOR")]
     public async Task<ActionResult<SensorDto>> Create([FromBody] CreateSensorRequestDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.Nombre))
-            return BadRequest(new { status = 400, message = "El nombre del sensor es obligatorio.", errors = Array.Empty<string>() });
+        if (string.IsNullOrWhiteSpace(request.Nombre) || string.IsNullOrWhiteSpace(request.Codigo) || string.IsNullOrWhiteSpace(request.Tipo) || request.ComunidadId <= 0)
+            return BadRequest(new { status = 400, message = "Los campos nombre, código, tipo y comunidadId son obligatorios.", errors = Array.Empty<string>() });
 
         var sensor = await _sensoresService.CreateAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = sensor.Id }, sensor);
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "ADMIN, OPERADOR")]
     public async Task<ActionResult<SensorDto>> Update(int id, [FromBody] UpdateSensorRequestDto request)
     {
         var sensor = await _sensoresService.UpdateAsync(id, request);
@@ -55,26 +62,23 @@ public class SensoresController : ControllerBase
     }
 
     [HttpPatch("{id:int}/estado")]
-    public async Task<ActionResult<SensorDto>> UpdateEstado(int id, [FromBody] UpdateSensorEstadoRequestDto request)
+    [Authorize(Roles = "ADMIN, OPERADOR")]
+    public async Task<ActionResult> UpdateEstado(int id, [FromBody] UpdateSensorEstadoRequestDto request)
     {
-        var sensor = await _sensoresService.GetByIdAsync(id);
-        if (sensor is null)
+        var updated = await _sensoresService.UpdateStateAsync(id, request.Activo);
+        if (!updated)
             return NotFound(new { status = 404, message = "Sensor no encontrado.", errors = Array.Empty<string>() });
 
-        sensor.Activo = request.Activo;
-        var updated = await _sensoresService.UpdateAsync(id, new UpdateSensorRequestDto
+        return Ok(new
         {
-            Nombre = sensor.Nombre,
-            Tipo = sensor.Tipo,
-            Unidad = sensor.Unidad,
-            ComunidadId = sensor.ComunidadId,
-            Activo = request.Activo,
+            status = 200,
+            message = "Estado del sensor actualizado correctamente.",
+            data = new { id, activo = request.Activo }
         });
-
-        return Ok(updated);
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult> Delete(int id)
     {
         var deleted = await _sensoresService.DeleteAsync(id);

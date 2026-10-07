@@ -21,12 +21,13 @@ public sealed class AuthService : IAuthService
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
     {
         var usuario = await _repository.GetUsuarioByUsernameAsync(request.Username);
-        if (usuario is null || !usuario.Activo || !usuario.PasswordHash.Equals(request.Password, StringComparison.Ordinal))
+        if (usuario is null || !usuario.Activo || !PasswordHasher.Verify(request.Password, usuario.PasswordHash))
             throw new InvalidOperationException("Credenciales inválidas");
 
         var expiresAt = DateTime.UtcNow.AddHours(8);
         var key = _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("La configuración Jwt:Key es obligatoria.");
+        if (key.Length < 32) throw new InvalidOperationException("La configuración Jwt:Key debe tener al menos 32 caracteres.");
         var issuer = _configuration["Jwt:Issuer"] ?? "WeatherRisk.Api";
         var claims = new[]
         {
@@ -42,6 +43,7 @@ public sealed class AuthService : IAuthService
         return new LoginResponseDto
         {
             Token = new JwtSecurityTokenHandler().WriteToken(token),
+            TokenType = "Bearer",
             ExpiresAt = expiresAt,
             User = new UsuarioSummaryDto
             {

@@ -9,6 +9,7 @@ public class LoginRequestDto
 public class LoginResponseDto
 {
     public string Token { get; set; } = string.Empty;
+    public string TokenType { get; set; } = "Bearer";
     public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddHours(8);
     public UsuarioSummaryDto User { get; set; } = new();
 }

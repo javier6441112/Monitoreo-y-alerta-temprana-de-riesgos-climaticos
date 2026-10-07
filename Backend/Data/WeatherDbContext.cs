@@ -16,10 +16,22 @@ public class WeatherDbContext : DbContext
     public DbSet<HistorialEvento> HistorialEventos { get; set; }
     public DbSet<Bitacora> Bitacora { get; set; }
     public DbSet<ConfiguracionAlerta> ConfiguracionAlertas { get; set; }
+    public DbSet<Comunidad> Comunidades { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Comunidad>(entity =>
+        {
+            entity.ToTable("Comunidades");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Nombre).HasMaxLength(200).IsRequired();
+            entity.Property(c => c.Municipio).HasMaxLength(100).IsRequired();
+            entity.Property(c => c.Departamento).HasMaxLength(100).IsRequired();
+            entity.Property(c => c.Pais).HasMaxLength(100).IsRequired();
+            entity.HasIndex(c => c.Nombre).IsUnique();
+        });
 
         modelBuilder.Entity<Usuario>(entity =>
         {
@@ -37,10 +49,13 @@ public class WeatherDbContext : DbContext
             entity.ToTable("Sensores");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Nombre).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Codigo).HasMaxLength(50).IsRequired();
             entity.Property(x => x.Tipo).HasMaxLength(50).IsRequired();
             entity.Property(x => x.Unidad).HasMaxLength(30).IsRequired();
             entity.Property(x => x.ValorActual).HasColumnType("decimal(18,3)");
             entity.Property(x => x.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(x => x.Codigo).IsUnique();
+            entity.HasOne(x => x.Comunidad).WithMany(c => c.Sensores).HasForeignKey(x => x.ComunidadId);
         });
 
         modelBuilder.Entity<LecturaSensor>(entity =>

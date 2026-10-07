@@ -9,4 +9,5 @@ public class Usuario
     public string Rol { get; set; } = "OPERADOR";
     public bool Activo { get; set; } = true;
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    public DateTime? UltimoAcceso { get; set; }
 }

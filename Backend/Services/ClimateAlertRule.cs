@@ -16,7 +16,7 @@ public sealed class ClimateAlertRule : IAlertRule
     {
         var thresholds = await _repository.GetConfiguracionAlertasAsync(sensor.Tipo);
         var threshold = thresholds
-            .Where(t => t.Activo && value >= t.ValorMinimo)
+            .Where(t => t.Activo && t.ValorMinimo.HasValue && t.ValorMinimo.Value <= value && (!t.ValorMaximo.HasValue || value <= t.ValorMaximo.Value))
             .OrderByDescending(t => t.ValorMinimo)
             .FirstOrDefault();
 

@@ -5,13 +5,15 @@ namespace WeatherRisk.Api.Repositories;
 public interface IWeatherRepository
 {
     Task<List<Usuario>> GetUsuariosAsync();
+    Task<Usuario?> GetUsuarioByIdAsync(int id);
     Task<Usuario?> GetUsuarioByUsernameAsync(string username);
+    Task<Usuario> CreateUsuarioAsync(Usuario usuario);
     Task<List<Sensor>> GetSensoresAsync();
     Task<Sensor?> GetSensorByIdAsync(int id);
     Task<Sensor> CreateSensorAsync(Sensor sensor);
     Task<Sensor?> UpdateSensorAsync(int id, Sensor sensor);
     Task<bool> DeleteSensorAsync(int id);
-    Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? fechaInicio = null, DateTime? fechaFin = null);
+    Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null);
     Task<LecturaSensor> CreateLecturaAsync(LecturaSensor lectura);
     Task<List<Alerta>> GetAlertasAsync(bool? activas = null);
     Task<Alerta?> GetAlertaByIdAsync(int id);

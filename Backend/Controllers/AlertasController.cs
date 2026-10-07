@@ -31,6 +31,7 @@ public class AlertasController : ControllerBase
     }
 
     [HttpPost("{id:int}/cerrar")]
+    [Authorize(Roles = "ADMIN, OPERADOR")]
     public async Task<ActionResult> Cerrar(int id)
     {
         var alerta = await _alertasService.CloseAsync(id);

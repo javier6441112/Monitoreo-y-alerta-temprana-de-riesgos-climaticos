@@ -18,6 +18,7 @@ builder.Services.AddDbContext<WeatherDbContext>(options =>
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("La configuración Jwt:Key es obligatoria.");
+if (jwtKey.Length < 32) throw new InvalidOperationException("La configuración Jwt:Key debe tener al menos 32 caracteres.");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "WeatherRisk.Api";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -80,6 +81,7 @@ builder.Services.AddScoped<IMonitoreoService, MonitoreoService>();
 builder.Services.AddScoped<IAlertEvaluationService, AlertEvaluationService>();
 builder.Services.AddScoped<IAlertRule, ClimateAlertRule>();
 builder.Services.AddScoped<IConfiguracionAlertaService, ConfiguracionAlertaService>();
+builder.Services.AddScoped<IComunidadService, ComunidadService>();
 
 var app = builder.Build();
 
