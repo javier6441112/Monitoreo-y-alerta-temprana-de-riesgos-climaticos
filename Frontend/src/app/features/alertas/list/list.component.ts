@@ -2,9 +2,10 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { Alerta, EstadoAlerta, FiltrosApi } from '../../../core/models/api-contract.models';
+import { Alerta, Comunidad, EstadoAlerta, FiltrosApi } from '../../../core/models/api-contract.models';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { AlertaService } from '../../../core/services/alerta/alerta.service';
+import { ComunidadService } from '../../../core/services/comunidad/comunidad.service';
 import { Signalr } from '../../../core/services/signalr/signalr';
 
 @Component({
@@ -14,7 +15,7 @@ import { Signalr } from '../../../core/services/signalr/signalr';
   template: `
     <section class="page-shell">
       <header class="page-head"><div><p class="eyebrow">CENTRO DE OPERACIONES</p><h1>Alertas</h1><p>Eventos detectados por las reglas de riesgo configuradas.</p></div><button class="button button-secondary" type="button" (click)="load()">Actualizar</button></header>
-      <form class="filters" (ngSubmit)="load()"><label>Desde<input type="date" name="desde" [(ngModel)]="filters.desde"></label><label>Hasta<input type="date" name="hasta" [(ngModel)]="filters.hasta"></label><label>Comunidad<input type="number" name="comunidadId" [(ngModel)]="filters.comunidadId" placeholder="ID"></label><label>Sensor<input type="number" name="sensorId" [(ngModel)]="filters.sensorId" placeholder="ID"></label><label>Fenómeno<select name="fenomeno" [(ngModel)]="filters.fenomeno"><option value="">Todos</option><option value="INUNDACION">Inundación</option><option value="SEQUIA">Sequía</option><option value="TORMENTA">Tormenta</option><option value="HELADA">Helada</option><option value="INCENDIO_FORESTAL">Incendio forestal</option></select></label><label>Nivel<select name="nivel" [(ngModel)]="filters.nivel"><option value="">Todos</option><option value="ROJO">Rojo</option><option value="NARANJA">Naranja</option><option value="AMARILLO">Amarillo</option><option value="VERDE">Verde</option></select></label><label>Estado<select name="estado" [(ngModel)]="filters.estado"><option value="">Todos</option><option value="ACTIVA">Activa</option><option value="ATENDIDA">Atendida</option><option value="CERRADA">Cerrada</option></select></label><button class="button button-primary" type="submit">Filtrar</button><button class="button button-quiet" type="button" (click)="clear()">Limpiar</button></form>
+      <form class="filters" (ngSubmit)="load()"><label>Desde<input type="date" name="desde" [(ngModel)]="filters.desde"></label><label>Hasta<input type="date" name="hasta" [(ngModel)]="filters.hasta"></label><label>Comunidad<select name="comunidadId" [(ngModel)]="filters.comunidadId"><option value="">Todas</option>@for (community of communities; track community.id) {<option [value]="community.id">{{ community.nombre }}</option>}</select></label><label>Sensor<input type="number" name="sensorId" [(ngModel)]="filters.sensorId" placeholder="ID"></label><label>Fenómeno<select name="fenomeno" [(ngModel)]="filters.fenomeno"><option value="">Todos</option><option value="INUNDACION">Inundación</option><option value="SEQUIA">Sequía</option><option value="TORMENTA">Tormenta</option><option value="HELADA">Helada</option><option value="INCENDIO_FORESTAL">Incendio forestal</option></select></label><label>Nivel<select name="nivel" [(ngModel)]="filters.nivel"><option value="">Todos</option><option value="ROJO">Rojo</option><option value="NARANJA">Naranja</option><option value="AMARILLO">Amarillo</option><option value="VERDE">Verde</option></select></label><label>Estado<select name="estado" [(ngModel)]="filters.estado"><option value="">Todos</option><option value="ACTIVA">Activa</option><option value="ATENDIDA">Atendida</option><option value="CERRADA">Cerrada</option></select></label><button class="button button-primary" type="submit">Filtrar</button><button class="button button-quiet" type="button" (click)="clear()">Limpiar</button></form>
       <div class="summary"><span><i class="dot dot-red"></i>{{ count('ACTIVA') }} activas</span><span><i class="dot dot-amber"></i>{{ count('ATENDIDA') }} atendidas</span><span><i class="dot dot-muted"></i>{{ count('CERRADA') }} cerradas</span></div>
       @if (error) { <div class="notice" role="alert">{{ error }}</div> }
       @if (loading) { <p class="state">Cargando alertas…</p> }
@@ -28,14 +29,19 @@ import { Signalr } from '../../../core/services/signalr/signalr';
 })
 export class ListComponent implements OnInit, OnDestroy {
   alerts: Alerta[] = [];
+  communities: Comunidad[] = [];
   loading = false;
   error = '';
   filters: FiltrosApi = { desde: '', hasta: '', comunidadId: '', sensorId: '', nivel: '', estado: '' };
   private readonly subscription = new Subscription();
   get canOperate(): boolean { return this.auth.hasRole(['ADMIN', 'OPERADOR']); }
 
-  constructor(private readonly service: AlertaService, private readonly auth: AuthService, private readonly signalr: Signalr) {}
-  ngOnInit(): void { this.load(); this.subscription.add(this.signalr.alertaGenerada$.subscribe(() => this.load())); }
+  constructor(private readonly service: AlertaService, private readonly communityService: ComunidadService, private readonly auth: AuthService, private readonly signalr: Signalr) {}
+  ngOnInit(): void {
+    this.communityService.getAll().subscribe({ next: data => this.communities = data, error: () => this.communities = [] });
+    this.load();
+    this.subscription.add(this.signalr.alertaGenerada$.subscribe(() => this.load()));
+  }
   ngOnDestroy(): void { this.subscription.unsubscribe(); }
 
   load(): void {
