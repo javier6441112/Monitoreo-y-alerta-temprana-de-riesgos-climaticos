@@ -64,6 +64,45 @@ public class UsuariosController : ControllerBase
         }
     }
 
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<UsuarioDto>> Update(int id, [FromBody] UpdateUsuarioRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Trim().Length > 100)
+            return BadRequest(new { status = 400, message = "El username es obligatorio y no puede superar 100 caracteres." });
+
+        if (string.IsNullOrWhiteSpace(request.Nombre) || request.Nombre.Trim().Length > 200)
+            return BadRequest(new { status = 400, message = "El nombre es obligatorio y no puede superar 200 caracteres." });
+
+        if (!string.IsNullOrWhiteSpace(request.Password) && request.Password.Length < 8)
+            return BadRequest(new { status = 400, message = "La contraseña debe tener al menos 8 caracteres." });
+
+        if (string.IsNullOrWhiteSpace(request.Rol))
+            return BadRequest(new { status = 400, message = "El rol debe ser ADMIN, OPERADOR o CONSULTA." });
+
+        var rol = request.Rol.Trim().ToUpperInvariant();
+        if (rol is not ("ADMIN" or "OPERADOR" or "CONSULTA"))
+            return BadRequest(new { status = 400, message = "El rol debe ser ADMIN, OPERADOR o CONSULTA." });
+
+        request.Rol = rol;
+
+        try
+        {
+            var usuario = await _usuariosService.UpdateAsync(id, request);
+            return usuario is null ? NotFound() : Ok(ToDto(usuario));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { status = 409, message = ex.Message });
+        }
+    }
+
+    [HttpPatch("{id:int}/estado")]
+    public async Task<ActionResult<UsuarioDto>> SetActive(int id, [FromBody] UpdateUsuarioEstadoRequestDto request)
+    {
+        var usuario = await _usuariosService.SetActiveAsync(id, request.Activo);
+        return usuario is null ? NotFound() : Ok(ToDto(usuario));
+    }
+
     private static UsuarioDto ToDto(WeatherRisk.Api.Models.Usuario usuario) => new()
     {
         Id = usuario.Id,

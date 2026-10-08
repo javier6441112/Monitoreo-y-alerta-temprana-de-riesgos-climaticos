@@ -30,4 +30,30 @@ public sealed class UsuariosService : IUsuariosService
             FechaCreacion = DateTime.UtcNow
         });
     }
+
+    public async Task<Usuario?> UpdateAsync(int id, UpdateUsuarioRequestDto request)
+    {
+        var existing = await _repository.GetUsuarioByIdAsync(id);
+        if (existing is null)
+            return null;
+
+        var username = request.Username.Trim();
+        var duplicate = await _repository.GetUsuarioByUsernameAsync(username);
+        if (duplicate is not null && duplicate.Id != id)
+            throw new InvalidOperationException("El username ya está registrado.");
+
+        return await _repository.UpdateUsuarioAsync(id, new Usuario
+        {
+            Username = username,
+            Nombre = request.Nombre.Trim(),
+            Rol = request.Rol.Trim().ToUpperInvariant(),
+            Activo = request.Activo,
+            PasswordHash = string.IsNullOrWhiteSpace(request.Password)
+                ? string.Empty
+                : PasswordHasher.Hash(request.Password)
+        });
+    }
+
+    public Task<Usuario?> SetActiveAsync(int id, bool activo) =>
+        _repository.SetUsuarioActivoAsync(id, activo);
 }

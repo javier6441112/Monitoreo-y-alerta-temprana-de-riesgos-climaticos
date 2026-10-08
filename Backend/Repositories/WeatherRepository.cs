@@ -70,6 +70,32 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult(usuario);
     }
 
+    public Task<Usuario?> UpdateUsuarioAsync(int id, Usuario usuario)
+    {
+        var existing = _usuarios.FirstOrDefault(u => u.Id == id);
+        if (existing is null)
+            return Task.FromResult<Usuario?>(null);
+
+        existing.Username = usuario.Username;
+        existing.Nombre = usuario.Nombre;
+        existing.Rol = usuario.Rol;
+        existing.Activo = usuario.Activo;
+        if (!string.IsNullOrWhiteSpace(usuario.PasswordHash))
+            existing.PasswordHash = usuario.PasswordHash;
+
+        return Task.FromResult<Usuario?>(existing);
+    }
+
+    public Task<Usuario?> SetUsuarioActivoAsync(int id, bool activo)
+    {
+        var existing = _usuarios.FirstOrDefault(u => u.Id == id);
+        if (existing is null)
+            return Task.FromResult<Usuario?>(null);
+
+        existing.Activo = activo;
+        return Task.FromResult<Usuario?>(existing);
+    }
+
     public Task<List<Sensor>> GetSensoresAsync() => Task.FromResult(_sensores);
 
     public Task<Sensor?> GetSensorByIdAsync(int id) =>

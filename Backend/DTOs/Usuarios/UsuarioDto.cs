@@ -22,6 +22,7 @@ public class CreateUsuarioRequestDto
 
 public class UpdateUsuarioRequestDto
 {
+    public string Username { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
     public string Rol { get; set; } = "OPERADOR";
     public bool Activo { get; set; } = true;
