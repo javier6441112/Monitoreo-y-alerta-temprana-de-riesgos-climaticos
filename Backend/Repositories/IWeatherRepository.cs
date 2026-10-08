@@ -1,3 +1,6 @@
+using WeatherRisk.Api.DTOs.Bitacora;
+using WeatherRisk.Api.DTOs.Dashboard;
+using WeatherRisk.Api.DTOs.Historial;
 using WeatherRisk.Api.Models;
 
 namespace WeatherRisk.Api.Repositories;
@@ -18,21 +21,25 @@ public interface IWeatherRepository
     Task<bool> DeleteSensorAsync(int id);
     Task<List<LecturaSensor>> GetLecturasAsync(int? sensorId = null, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null);
     Task<LecturaSensor> CreateLecturaAsync(LecturaSensor lectura);
-    Task<List<Alerta>> GetAlertasAsync(bool? activas = null);
+    Task<List<Alerta>> GetAlertasAsync(bool? activas = null, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null, int? sensorId = null, string? fenomeno = null, string? nivel = null, string? estado = null);
     Task<Alerta?> GetAlertaByIdAsync(int id);
     Task<Alerta> CreateAlertaAsync(Alerta alerta);
     Task<Alerta?> CerrarAlertaAsync(int id);
+    Task<Alerta?> SetAlertaStateAsync(int id, string estado);
     Task<List<HistorialEvento>> GetHistorialAsync();
     Task<HistorialEvento> CreateHistorialEventoAsync(HistorialEvento evento);
-    Task<List<Bitacora>> GetBitacoraAsync();
+    Task<List<Bitacora>> GetBitacoraAsync(DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null, string? accion = null, string? entidad = null);
     Task<Bitacora> CreateBitacoraAsync(Bitacora bitacora);
     Task<List<Sensor>> GetSensoresActivosAsync();
-    Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null);
+    Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null, bool? activo = null);
     Task<ConfiguracionAlerta?> GetConfiguracionAlertaByIdAsync(int id);
     Task<ConfiguracionAlerta> CreateConfiguracionAlertaAsync(ConfiguracionAlerta config);
     Task<ConfiguracionAlerta?> UpdateConfiguracionAlertaAsync(int id, ConfiguracionAlerta config);
+    Task<ConfiguracionAlerta?> SetConfiguracionAlertaStateAsync(int id, bool activo);
     Task<bool> DeleteConfiguracionAlertaAsync(int id);
-    Task<DashboardSnapshot> GetDashboardSnapshotAsync();
+    Task<DashboardSnapshot> GetDashboardSnapshotAsync(DashboardFiltersDto filters);
+    Task<List<DashboardSeriesDto>> GetDashboardSeriesAsync(DashboardFiltersDto filters);
+    Task<List<HistorialDto>> GetFilteredHistorialAsync(HistorialFiltersDto filters);
 }
 
 public class DashboardSnapshot

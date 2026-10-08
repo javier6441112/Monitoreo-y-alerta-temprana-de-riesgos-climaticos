@@ -4,5 +4,6 @@ namespace WeatherRisk.Api.Services;
 
 public interface IDashboardService
 {
-    Task<DashboardDto> GetAsync();
+    Task<DashboardDto> GetAsync(DashboardFiltersDto filters);
+    Task<List<DashboardSeriesDto>> GetSeriesAsync(DashboardFiltersDto filters);
 }

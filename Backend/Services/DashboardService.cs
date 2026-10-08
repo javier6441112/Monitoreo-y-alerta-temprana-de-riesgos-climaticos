@@ -9,9 +9,9 @@ public sealed class DashboardService : IDashboardService
 
     public DashboardService(IWeatherRepository repository) => _repository = repository;
 
-    public async Task<DashboardDto> GetAsync()
+    public async Task<DashboardDto> GetAsync(DashboardFiltersDto filters)
     {
-        var snapshot = await _repository.GetDashboardSnapshotAsync();
+        var snapshot = await _repository.GetDashboardSnapshotAsync(filters);
         return new DashboardDto
         {
             Temperatura = new() { Valor = snapshot.Temperatura, Unidad = "°C" },
@@ -24,5 +24,15 @@ public sealed class DashboardService : IDashboardService
             SensoresActivos = snapshot.SensoresActivos,
             SensoresTotales = snapshot.SensoresTotales
         };
+    }
+
+    public async Task<List<DashboardSeriesDto>> GetSeriesAsync(DashboardFiltersDto filters)
+    {
+        var series = await _repository.GetDashboardSeriesAsync(filters);
+        return series.Select(point => new DashboardSeriesDto
+        {
+            FechaHora = point.FechaHora,
+            Valor = point.Valor
+        }).ToList();
     }
 }

@@ -13,8 +13,8 @@ public sealed class ConfiguracionAlertaService : IConfiguracionAlertaService
         _repository = repository;
     }
 
-    public async Task<List<ConfiguracionAlertaDto>> GetAllAsync(string? tipoSensor = null) =>
-        (await _repository.GetConfiguracionAlertasAsync(tipoSensor)).Select(Map).ToList();
+    public async Task<List<ConfiguracionAlertaDto>> GetAllAsync(string? tipoSensor = null, bool? activo = null) =>
+        (await _repository.GetConfiguracionAlertasAsync(tipoSensor, activo)).Select(Map).ToList();
 
     public async Task<ConfiguracionAlertaDto?> GetByIdAsync(int id)
     {
@@ -52,14 +52,22 @@ public sealed class ConfiguracionAlertaService : IConfiguracionAlertaService
         return updated is null ? null : Map(updated);
     }
 
+    public async Task<ConfiguracionAlertaDto?> SetActiveAsync(int id, bool activo)
+    {
+        var config = await _repository.SetConfiguracionAlertaStateAsync(id, activo);
+        return config is null ? null : Map(config);
+    }
+
     public Task<bool> DeleteAsync(int id) => _repository.DeleteConfiguracionAlertaAsync(id);
 
     private static ConfiguracionAlertaDto Map(ConfiguracionAlerta config) => new()
     {
         Id = config.Id,
+        Nombre = config.Nombre,
         TipoSensor = config.TipoSensor,
-        Nivel = config.Nivel,
         ValorMinimo = config.ValorMinimo,
+        ValorMaximo = config.ValorMaximo,
+        Nivel = config.Nivel,
         Fenomeno = config.Fenomeno,
         Mensaje = config.Mensaje,
         Activo = config.Activo

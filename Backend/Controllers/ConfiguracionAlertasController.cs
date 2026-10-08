@@ -18,9 +18,9 @@ public class ConfiguracionAlertasController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ConfiguracionAlertaDto>>> GetAll([FromQuery] string? tipoSensor = null)
+    public async Task<ActionResult<List<ConfiguracionAlertaDto>>> GetAll([FromQuery] string? tipoSensor = null, [FromQuery] bool? activo = null)
     {
-        var config = await _service.GetAllAsync(tipoSensor);
+        var config = await _service.GetAllAsync(tipoSensor, activo);
         return Ok(config);
     }
 
@@ -54,6 +54,16 @@ public class ConfiguracionAlertasController : ControllerBase
     public async Task<ActionResult<ConfiguracionAlertaDto>> Update(int id, [FromBody] UpdateConfiguracionAlertaRequestDto request)
     {
         var updated = await _service.UpdateAsync(id, request);
+        if (updated is null)
+            return NotFound(new { status = 404, message = "Configuración no encontrada.", errors = Array.Empty<string>() });
+
+        return Ok(updated);
+    }
+
+    [HttpPatch("{id:int}/estado")]
+    public async Task<ActionResult<ConfiguracionAlertaDto>> SetState(int id, [FromBody] UpdateConfiguracionAlertaEstadoRequestDto request)
+    {
+        var updated = await _service.SetActiveAsync(id, request.Activo);
         if (updated is null)
             return NotFound(new { status = 404, message = "Configuración no encontrada.", errors = Array.Empty<string>() });
 

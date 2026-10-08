@@ -1,4 +1,4 @@
-using WeatherRisk.Api.Models;
+using WeatherRisk.Api.DTOs.Historial;
 using WeatherRisk.Api.Repositories;
 
 namespace WeatherRisk.Api.Services;
@@ -9,5 +9,17 @@ public sealed class HistorialService : IHistorialService
 
     public HistorialService(IWeatherRepository repository) => _repository = repository;
 
-    public Task<List<HistorialEvento>> GetAllAsync() => _repository.GetHistorialAsync();
+    public Task<List<HistorialDto>> GetAllAsync(HistorialFiltersDto filters) =>
+        _repository.GetFilteredHistorialAsync(filters);
+
+    public async Task<EstadisticasHistorialDto> GetStatisticsAsync(HistorialFiltersDto filters)
+    {
+        var eventos = await _repository.GetFilteredHistorialAsync(filters);
+        return new EstadisticasHistorialDto
+        {
+            TotalEventos = eventos.Count,
+            PorNivel = eventos.GroupBy(e => e.Nivel).ToDictionary(g => g.Key, g => g.Count()),
+            PorFenomeno = eventos.GroupBy(e => e.Fenomeno).ToDictionary(g => g.Key, g => g.Count())
+        };
+    }
 }

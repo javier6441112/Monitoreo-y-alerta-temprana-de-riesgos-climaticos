@@ -1,3 +1,5 @@
+using WeatherRisk.Api.DTOs.Dashboard;
+using WeatherRisk.Api.DTOs.Historial;
 using WeatherRisk.Api.Models;
 
 namespace WeatherRisk.Api.Repositories;
@@ -177,12 +179,17 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult(lectura);
     }
 
-    public Task<List<Alerta>> GetAlertasAsync(bool? activas = null)
+    public Task<List<Alerta>> GetAlertasAsync(bool? activas = null, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null, int? sensorId = null, string? fenomeno = null, string? nivel = null, string? estado = null)
     {
         var result = _alertas.AsEnumerable();
-        if (activas.HasValue)
-            result = result.Where(a => a.Activa == activas.Value);
-
+        if (activas.HasValue) result = result.Where(a => a.Activa == activas.Value);
+        if (desde.HasValue) result = result.Where(a => a.FechaHora >= desde.Value);
+        if (hasta.HasValue) result = result.Where(a => a.FechaHora <= hasta.Value);
+        if (comunidadId.HasValue) result = result.Where(a => a.Sensor?.ComunidadId == comunidadId.Value);
+        if (sensorId.HasValue) result = result.Where(a => a.SensorId == sensorId.Value);
+        if (!string.IsNullOrWhiteSpace(fenomeno)) result = result.Where(a => a.Fenomeno.Contains(fenomeno));
+        if (!string.IsNullOrWhiteSpace(nivel)) result = result.Where(a => a.Nivel == nivel);
+        if (!string.IsNullOrWhiteSpace(estado)) result = result.Where(a => a.Estado == estado);
         return Task.FromResult(result.OrderByDescending(a => a.FechaHora).ToList());
     }
 
@@ -208,6 +215,15 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult<Alerta?>(alerta);
     }
 
+    public Task<Alerta?> SetAlertaStateAsync(int id, string estado)
+    {
+        var alerta = _alertas.FirstOrDefault(a => a.Id == id);
+        if (alerta is null) return Task.FromResult<Alerta?>(null);
+        alerta.Estado = estado;
+        alerta.Activa = estado == "ACTIVA";
+        return Task.FromResult<Alerta?>(alerta);
+    }
+
     public Task<List<HistorialEvento>> GetHistorialAsync() =>
         Task.FromResult(_historial.OrderByDescending(h => h.FechaHora).ToList());
 
@@ -218,8 +234,16 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult(evento);
     }
 
-    public Task<List<Bitacora>> GetBitacoraAsync() =>
-        Task.FromResult(_bitacora.OrderByDescending(b => b.FechaHora).ToList());
+    public Task<List<Bitacora>> GetBitacoraAsync(DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null, string? accion = null, string? entidad = null)
+    {
+        var result = _bitacora.AsEnumerable();
+        if (desde.HasValue) result = result.Where(b => b.FechaHora >= desde.Value);
+        if (hasta.HasValue) result = result.Where(b => b.FechaHora <= hasta.Value);
+        if (usuarioId.HasValue) result = result.Where(b => b.UsuarioId == usuarioId.Value);
+        if (!string.IsNullOrWhiteSpace(accion)) result = result.Where(b => b.Accion.Contains(accion));
+        if (!string.IsNullOrWhiteSpace(entidad)) result = result.Where(b => b.Descripcion.Contains(entidad));
+        return Task.FromResult(result.OrderByDescending(b => b.FechaHora).ToList());
+    }
 
     public Task<Bitacora> CreateBitacoraAsync(Bitacora bitacora)
     {
@@ -232,7 +256,7 @@ public class WeatherRepository : IWeatherRepository
     public Task<List<Sensor>> GetSensoresActivosAsync() =>
         Task.FromResult(_sensores.Where(s => s.Activo).ToList());
 
-    public Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null)
+    public Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null, bool? activo = null)
     {
         var result = new List<ConfiguracionAlerta>
         {
@@ -245,7 +269,9 @@ public class WeatherRepository : IWeatherRepository
         };
 
         if (!string.IsNullOrWhiteSpace(tipoSensor))
-            result = result.Where(r => r.TipoSensor == tipoSensor && r.Activo).ToList();
+            result = result.Where(r => r.TipoSensor == tipoSensor).ToList();
+        if (activo.HasValue)
+            result = result.Where(r => r.Activo == activo.Value).ToList();
 
         return Task.FromResult(result.OrderByDescending(r => r.ValorMinimo).ToList());
     }
@@ -291,9 +317,25 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult<ConfiguracionAlerta?>(current);
     }
 
+    public Task<ConfiguracionAlerta?> SetConfiguracionAlertaStateAsync(int id, bool activo)
+    {
+        var config = new List<ConfiguracionAlerta>
+        {
+            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
+            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
+            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
+            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
+            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
+            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
+        }.FirstOrDefault(r => r.Id == id);
+        if (config is null) return Task.FromResult<ConfiguracionAlerta?>(null);
+        config.Activo = activo;
+        return Task.FromResult<ConfiguracionAlerta?>(config);
+    }
+
     public Task<bool> DeleteConfiguracionAlertaAsync(int id) => Task.FromResult(id > 0);
 
-    public Task<DashboardSnapshot> GetDashboardSnapshotAsync()
+    public Task<DashboardSnapshot> GetDashboardSnapshotAsync(DashboardFiltersDto filters)
     {
         var temps = _sensores.FirstOrDefault(s => s.Tipo == "TEMPERATURA");
         var humedad = _sensores.FirstOrDefault(s => s.Tipo == "HUMEDAD");
@@ -325,4 +367,37 @@ public class WeatherRepository : IWeatherRepository
 
         return Task.FromResult(snapshot);
     }
+
+    public Task<List<DashboardSeriesDto>> GetDashboardSeriesAsync(DashboardFiltersDto filters) =>
+        Task.FromResult(_lecturas
+            .Where(l => filters.ComunidadId == null || l.Sensor?.ComunidadId == filters.ComunidadId.Value)
+            .Where(l => !filters.Desde.HasValue || l.FechaHora >= filters.Desde.Value)
+            .Where(l => !filters.Hasta.HasValue || l.FechaHora <= filters.Hasta.Value)
+            .OrderBy(l => l.FechaHora)
+            .Select(l => new DashboardSeriesDto { FechaHora = l.FechaHora, Valor = l.Valor })
+            .ToList());
+
+    public Task<List<HistorialDto>> GetFilteredHistorialAsync(HistorialFiltersDto filters) =>
+        Task.FromResult(_historial
+            .Where(h => !filters.Desde.HasValue || h.FechaHora >= filters.Desde.Value)
+            .Where(h => !filters.Hasta.HasValue || h.FechaHora <= filters.Hasta.Value)
+            .Where(h => !filters.ComunidadId.HasValue || _sensores.Any(s => s.Id == h.SensorId && s.ComunidadId == filters.ComunidadId.Value))
+            .Where(h => !filters.SensorId.HasValue || h.SensorId == filters.SensorId.Value)
+            .Where(h => string.IsNullOrWhiteSpace(filters.Fenomeno) || h.Fenomeno == filters.Fenomeno)
+            .Where(h => string.IsNullOrWhiteSpace(filters.Nivel) || h.Nivel == filters.Nivel)
+            .OrderByDescending(h => h.FechaHora)
+            .Select(h => new HistorialDto
+            {
+                Id = h.Id,
+                FechaHora = h.FechaHora,
+                ComunidadId = _sensores.FirstOrDefault(s => s.Id == h.SensorId)?.ComunidadId ?? 0,
+                SensorId = h.SensorId,
+                SensorNombre = _sensores.FirstOrDefault(s => s.Id == h.SensorId)?.Nombre ?? $"Sensor {h.SensorId}",
+                AlertaId = h.AlertaId,
+                Fenomeno = h.Fenomeno,
+                Nivel = h.Nivel,
+                Mensaje = h.Mensaje,
+                Estado = "ACTIVA"
+            })
+            .ToList());
 }

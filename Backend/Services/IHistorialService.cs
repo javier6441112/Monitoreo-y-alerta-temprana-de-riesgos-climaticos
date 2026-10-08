@@ -1,8 +1,9 @@
-using WeatherRisk.Api.Models;
+using WeatherRisk.Api.DTOs.Historial;
 
 namespace WeatherRisk.Api.Services;
 
 public interface IHistorialService
 {
-    Task<List<HistorialEvento>> GetAllAsync();
+    Task<List<HistorialDto>> GetAllAsync(HistorialFiltersDto filters);
+    Task<EstadisticasHistorialDto> GetStatisticsAsync(HistorialFiltersDto filters);
 }

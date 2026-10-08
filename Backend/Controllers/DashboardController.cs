@@ -18,9 +18,16 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<DashboardDto>> GetDashboard()
+    public async Task<ActionResult<DashboardDto>> GetDashboard([FromQuery] DashboardFiltersDto filters)
     {
-        var dashboard = await _dashboardService.GetAsync();
+        var dashboard = await _dashboardService.GetAsync(filters);
         return Ok(dashboard);
+    }
+
+    [HttpGet("series")]
+    public async Task<ActionResult<List<DashboardSeriesDto>>> GetSeries([FromQuery] DashboardFiltersDto filters)
+    {
+        var series = await _dashboardService.GetSeriesAsync(filters);
+        return Ok(series);
     }
 }
