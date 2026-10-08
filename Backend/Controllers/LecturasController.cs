@@ -41,5 +41,9 @@ public class LecturasController : ControllerBase
         {
             return NotFound(new { status = 404, message = ex.Message, errors = Array.Empty<string>() });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { status = 400, message = ex.Message, errors = Array.Empty<string>() });
+        }
     }
 }

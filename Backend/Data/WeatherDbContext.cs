@@ -110,11 +110,13 @@ public class WeatherDbContext : DbContext
         {
             entity.ToTable("ConfiguracionAlertas");
             entity.HasKey(x => x.Id);
+            entity.Property(x => x.Nombre).HasMaxLength(200).IsRequired();
             entity.Property(x => x.TipoSensor).HasMaxLength(50).IsRequired();
             entity.Property(x => x.Nivel).HasMaxLength(20).IsRequired();
             entity.Property(x => x.Fenomeno).HasMaxLength(50).IsRequired();
             entity.Property(x => x.Mensaje).HasMaxLength(500).IsRequired();
             entity.Property(x => x.ValorMinimo).HasColumnType("decimal(18,3)");
+            entity.Property(x => x.ValorMaximo).HasColumnType("decimal(18,3)");
             entity.Property(x => x.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
         });
 
@@ -132,12 +134,15 @@ public class WeatherDbContext : DbContext
         );
 
         modelBuilder.Entity<ConfiguracionAlerta>().HasData(
-            new ConfiguracionAlerta { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true, FechaCreacion = DateTime.UtcNow },
-            new ConfiguracionAlerta { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true, FechaCreacion = DateTime.UtcNow },
-            new ConfiguracionAlerta { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true, FechaCreacion = DateTime.UtcNow },
-            new ConfiguracionAlerta { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true, FechaCreacion = DateTime.UtcNow },
-            new ConfiguracionAlerta { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true, FechaCreacion = DateTime.UtcNow },
-            new ConfiguracionAlerta { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true, FechaCreacion = DateTime.UtcNow }
+            new ConfiguracionAlerta { Id = 1, Nombre = "Río: precaución", TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 2, Nombre = "Río: alerta", TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 3, Nombre = "Río: emergencia", TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 4, Nombre = "Viento: precaución", TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true, FechaCreacion = DateTime.UtcNow },
+            new ConfiguracionAlerta { Id = 5, Nombre = "Viento: alerta", TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true, FechaCreacion = DateTime.UtcNow },
+              new ConfiguracionAlerta { Id = 6, Nombre = "Viento: emergencia", TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true, FechaCreacion = DateTime.UtcNow },
+              new ConfiguracionAlerta { Id = 7, Nombre = "Temperatura: aviso", TipoSensor = "TEMPERATURA", Nivel = "AMARILLO", ValorMinimo = 35m, Fenomeno = "CALOR", Mensaje = "Temperatura por encima del nivel normal.", Activo = true, FechaCreacion = DateTime.UtcNow },
+              new ConfiguracionAlerta { Id = 8, Nombre = "Temperatura: alerta", TipoSensor = "TEMPERATURA", Nivel = "NARANJA", ValorMinimo = 39m, Fenomeno = "CALOR", Mensaje = "Temperatura en nivel de alerta.", Activo = true, FechaCreacion = DateTime.UtcNow },
+              new ConfiguracionAlerta { Id = 9, Nombre = "Temperatura: emergencia", TipoSensor = "TEMPERATURA", Nivel = "ROJO", ValorMinimo = 43m, Fenomeno = "CALOR", Mensaje = "Temperatura en nivel de emergencia.", Activo = true, FechaCreacion = DateTime.UtcNow }
         );
     }
 }

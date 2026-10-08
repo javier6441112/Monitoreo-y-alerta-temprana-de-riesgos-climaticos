@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using System.Globalization;
 using WeatherRisk.Api.Hubs;
 using WeatherRisk.Api.Models;
 using WeatherRisk.Api.Repositories;
@@ -32,10 +33,13 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
         var alerta = await _repository.CreateAlertaAsync(new Alerta
         {
             SensorId = sensor.Id,
+            ConfiguracionAlertaId = decision.ConfiguracionAlertaId,
             Nivel = decision.Nivel,
             Fenomeno = decision.Fenomeno,
-            Mensaje = decision.Mensaje,
+            Mensaje = $"{SensorLabel(sensor.Tipo)}: {value.ToString("0.###", CultureInfo.InvariantCulture)} {sensor.Unidad}. {decision.Mensaje}",
             ValorDetectado = value,
+            ValorMinimo = decision.ValorMinimo,
+            ValorMaximo = decision.ValorMaximo,
             Activa = true
         });
 
@@ -67,4 +71,16 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
 
         await _hubContext.Clients.All.SendAsync("alertaGenerada", alerta);
     }
+
+    private static string SensorLabel(string tipo) => tipo switch
+    {
+        "TEMPERATURA" => "Temperatura",
+        "HUMEDAD" => "Humedad",
+        "VIENTO" => "Viento",
+        "LLUVIA" => "Lluvia",
+        "NIVEL_RIO" => "Nivel del río",
+        "RESERVORIO" => "Nivel del reservorio",
+        "HUMO" => "Humo",
+        _ => tipo.Replace('_', ' ')
+    };
 }

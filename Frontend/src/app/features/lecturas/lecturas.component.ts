@@ -12,9 +12,10 @@ import { MatTableModule } from '@angular/material/table';
 import { Lectura } from '../../core/models/lectura.model';
 import { Sensor, SensorService } from '../../core/services/sensor/sensor.service';
 import { LecturaService } from '../../core/services/lectura/lectura.service';
-import { Comunidad } from '../../core/models/api-contract.models';
+import { Comunidad, ReglaAlerta } from '../../core/models/api-contract.models';
 import { ComunidadService } from '../../core/services/comunidad/comunidad.service';
 import { AuthService } from '../../core/services/auth/auth.service';
+import { ConfiguracionAlertaService } from '../../core/services/configuracion-alerta/configuracion-alerta.service';
 
 @Component({
   selector: 'app-lecturas',
@@ -64,6 +65,7 @@ import { AuthService } from '../../core/services/auth/auth.service';
                 <mat-option *ngFor="let sensor of sensoresDisponibles" [value]="sensor.id">
                   {{ sensor.nombre }} ({{ sensor.unidad }})
                 </mat-option>
+                <mat-option *ngIf="!sensoresDisponibles.length" disabled>No hay sensores con reglas activas en esta comunidad</mat-option>
               </mat-select>
               <mat-error>Selecciona un sensor de la comunidad</mat-error>
             </mat-form-field>
@@ -165,6 +167,7 @@ export class LecturasComponent implements OnInit {
   sensores: Sensor[] = [];
   allSensors: Sensor[] = [];
   communities: Comunidad[] = [];
+  activeRuleTypes = new Set<string>();
   lecturas: Lectura[] = [];
   columns = ['id', 'sensorId', 'comunidadId', 'valor', 'fechaHora', 'estadoSensor'];
   saving = false;
@@ -176,7 +179,7 @@ export class LecturasComponent implements OnInit {
   get sensoresDisponibles(): Sensor[] {
     const communityId = this.readingForm.controls.comunidadRegistroId.value;
     return communityId
-      ? this.allSensors.filter(sensor => sensor.comunidadId === communityId && sensor.activo)
+      ? this.allSensors.filter(sensor => sensor.comunidadId === communityId && sensor.activo && this.activeRuleTypes.has(sensor.tipo))
       : [];
   }
   get canOperate(): boolean { return this.authService.hasRole(['ADMIN', 'OPERADOR']); }
@@ -189,6 +192,7 @@ export class LecturasComponent implements OnInit {
     private lecturaService: LecturaService,
     private communityService: ComunidadService,
     private authService: AuthService,
+    private configuracionAlertaService: ConfiguracionAlertaService,
     private snackBar: MatSnackBar
   ) {
     this.readingForm = this.formBuilder.group({
@@ -212,6 +216,18 @@ export class LecturasComponent implements OnInit {
         }
       },
       error: () => this.communities = []
+    });
+
+    this.configuracionAlertaService.getAll({ activo: true }).subscribe({
+      next: (rules: ReglaAlerta[]) => {
+        this.activeRuleTypes = new Set(rules.map(rule => rule.tipoSensor));
+        this.onCommunityChange();
+      },
+      error: () => {
+        this.activeRuleTypes.clear();
+        this.onCommunityChange();
+        this.snackBar.open('No se pudieron cargar las reglas activas de alerta', 'Cerrar', { duration: 4000 });
+      }
     });
 
     this.sensorService.getSensores().subscribe({

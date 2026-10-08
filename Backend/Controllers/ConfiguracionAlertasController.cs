@@ -6,7 +6,7 @@ using WeatherRisk.Api.Services;
 namespace WeatherRisk.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "ADMIN")]
+[Authorize]
 [Route("api/[controller]")]
 public class ConfiguracionAlertasController : ControllerBase
 {
@@ -35,24 +35,28 @@ public class ConfiguracionAlertasController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<ConfiguracionAlertaDto>> Create([FromBody] CreateConfiguracionAlertaRequestDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.TipoSensor))
-            return BadRequest(new { status = 400, message = "El tipo de sensor es obligatorio.", errors = Array.Empty<string>() });
+        var validationError = ValidateRequest(request);
+        if (validationError is not null)
+            return BadRequest(new { status = 400, message = validationError, errors = Array.Empty<string>() });
 
-        if (string.IsNullOrWhiteSpace(request.Nivel))
-            return BadRequest(new { status = 400, message = "El nivel es obligatorio.", errors = Array.Empty<string>() });
-
-        if (request.ValorMinimo <= 0)
-            return BadRequest(new { status = 400, message = "El valor mínimo debe ser mayor que cero.", errors = Array.Empty<string>() });
+        NormalizeRequest(request);
 
         var created = await _service.CreateAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<ConfiguracionAlertaDto>> Update(int id, [FromBody] UpdateConfiguracionAlertaRequestDto request)
     {
+        var validationError = ValidateRequest(request);
+        if (validationError is not null)
+            return BadRequest(new { status = 400, message = validationError, errors = Array.Empty<string>() });
+
+        NormalizeRequest(request);
         var updated = await _service.UpdateAsync(id, request);
         if (updated is null)
             return NotFound(new { status = 404, message = "Configuración no encontrada.", errors = Array.Empty<string>() });
@@ -61,6 +65,7 @@ public class ConfiguracionAlertasController : ControllerBase
     }
 
     [HttpPatch("{id:int}/estado")]
+    [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<ConfiguracionAlertaDto>> SetState(int id, [FromBody] UpdateConfiguracionAlertaEstadoRequestDto request)
     {
         var updated = await _service.SetActiveAsync(id, request.Activo);
@@ -71,6 +76,7 @@ public class ConfiguracionAlertasController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult> Delete(int id)
     {
         var deleted = await _service.DeleteAsync(id);
@@ -78,5 +84,36 @@ public class ConfiguracionAlertasController : ControllerBase
             return NotFound(new { status = 404, message = "Configuración no encontrada.", errors = Array.Empty<string>() });
 
         return NoContent();
+    }
+
+    private static string? ValidateRequest(CreateConfiguracionAlertaRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Nombre) || request.Nombre.Trim().Length > 200)
+            return "El nombre es obligatorio y no puede superar 200 caracteres.";
+        if (string.IsNullOrWhiteSpace(request.TipoSensor))
+            return "El tipo de sensor es obligatorio.";
+        if (string.IsNullOrWhiteSpace(request.Nivel))
+            return "El nivel es obligatorio.";
+        if (request.Nivel.Trim().ToUpperInvariant() is not ("ROJO" or "NARANJA" or "AMARILLO" or "VERDE"))
+            return "El nivel debe ser ROJO, NARANJA, AMARILLO o VERDE.";
+        if (!request.ValorMinimo.HasValue && !request.ValorMaximo.HasValue)
+            return "Debe indicar al menos un límite.";
+        if (request.ValorMinimo.HasValue && request.ValorMaximo.HasValue && request.ValorMinimo > request.ValorMaximo)
+            return "El valor mínimo no puede ser mayor que el máximo.";
+        if (string.IsNullOrWhiteSpace(request.Fenomeno))
+            return "El fenómeno es obligatorio.";
+        if (string.IsNullOrWhiteSpace(request.Mensaje))
+            return "El mensaje es obligatorio.";
+
+        return null;
+    }
+
+    private static void NormalizeRequest(CreateConfiguracionAlertaRequestDto request)
+    {
+        request.Nombre = request.Nombre.Trim();
+        request.TipoSensor = request.TipoSensor.Trim().ToUpperInvariant();
+        request.Nivel = request.Nivel.Trim().ToUpperInvariant();
+        request.Fenomeno = request.Fenomeno.Trim().ToUpperInvariant();
+        request.Mensaje = request.Mensaje.Trim();
     }
 }
