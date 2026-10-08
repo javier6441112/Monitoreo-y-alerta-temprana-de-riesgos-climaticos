@@ -12,6 +12,15 @@ public class WeatherRepository : IWeatherRepository
     private readonly List<Alerta> _alertas;
     private readonly List<HistorialEvento> _historial;
     private readonly List<Bitacora> _bitacora;
+    private readonly List<ConfiguracionAlerta> _configuracionAlertas = new()
+    {
+        new() { Id = 1, Nombre = "Río: precaución", TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
+        new() { Id = 2, Nombre = "Río: alerta", TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
+        new() { Id = 3, Nombre = "Río: emergencia", TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
+        new() { Id = 4, Nombre = "Viento: precaución", TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
+        new() { Id = 5, Nombre = "Viento: alerta", TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
+        new() { Id = 6, Nombre = "Viento: emergencia", TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
+    };
 
     public WeatherRepository()
     {
@@ -211,7 +220,9 @@ public class WeatherRepository : IWeatherRepository
         if (alerta is null)
             return Task.FromResult<Alerta?>(null);
 
+        alerta.Estado = "CERRADA";
         alerta.Activa = false;
+        alerta.FechaCierre = DateTime.UtcNow;
         return Task.FromResult<Alerta?>(alerta);
     }
 
@@ -221,6 +232,10 @@ public class WeatherRepository : IWeatherRepository
         if (alerta is null) return Task.FromResult<Alerta?>(null);
         alerta.Estado = estado;
         alerta.Activa = estado == "ACTIVA";
+        if (estado == "ATENDIDA")
+            alerta.FechaAtencion ??= DateTime.UtcNow;
+        if (estado == "CERRADA")
+            alerta.FechaCierre ??= DateTime.UtcNow;
         return Task.FromResult<Alerta?>(alerta);
     }
 
@@ -258,59 +273,38 @@ public class WeatherRepository : IWeatherRepository
 
     public Task<List<ConfiguracionAlerta>> GetConfiguracionAlertasAsync(string? tipoSensor = null, bool? activo = null)
     {
-        var result = new List<ConfiguracionAlerta>
-        {
-            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
-            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
-            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
-            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
-            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
-            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
-        };
+        var result = _configuracionAlertas.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(tipoSensor))
-            result = result.Where(r => r.TipoSensor == tipoSensor).ToList();
+            result = result.Where(r => r.TipoSensor == tipoSensor);
         if (activo.HasValue)
-            result = result.Where(r => r.Activo == activo.Value).ToList();
+            result = result.Where(r => r.Activo == activo.Value);
 
         return Task.FromResult(result.OrderByDescending(r => r.ValorMinimo).ToList());
     }
 
     public Task<ConfiguracionAlerta?> GetConfiguracionAlertaByIdAsync(int id) =>
-        Task.FromResult(new List<ConfiguracionAlerta>
-        {
-            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
-            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
-            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
-            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
-            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
-            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
-        }.FirstOrDefault(r => r.Id == id));
+        Task.FromResult(_configuracionAlertas.FirstOrDefault(r => r.Id == id));
 
     public Task<ConfiguracionAlerta> CreateConfiguracionAlertaAsync(ConfiguracionAlerta config)
     {
-        config.Id = 101;
+        config.Id = _configuracionAlertas.Count > 0 ? _configuracionAlertas.Max(r => r.Id) + 1 : 1;
+        _configuracionAlertas.Add(config);
         return Task.FromResult(config);
     }
 
     public Task<ConfiguracionAlerta?> UpdateConfiguracionAlertaAsync(int id, ConfiguracionAlerta config)
     {
-        var current = new List<ConfiguracionAlerta>
-        {
-            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
-            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
-            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
-            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
-            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
-            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
-        }.FirstOrDefault(r => r.Id == id);
+        var current = _configuracionAlertas.FirstOrDefault(r => r.Id == id);
 
         if (current is null)
             return Task.FromResult<ConfiguracionAlerta?>(null);
 
+        current.Nombre = config.Nombre;
         current.TipoSensor = config.TipoSensor;
         current.Nivel = config.Nivel;
         current.ValorMinimo = config.ValorMinimo;
+        current.ValorMaximo = config.ValorMaximo;
         current.Fenomeno = config.Fenomeno;
         current.Mensaje = config.Mensaje;
         current.Activo = config.Activo;
@@ -319,21 +313,17 @@ public class WeatherRepository : IWeatherRepository
 
     public Task<ConfiguracionAlerta?> SetConfiguracionAlertaStateAsync(int id, bool activo)
     {
-        var config = new List<ConfiguracionAlerta>
-        {
-            new() { Id = 1, TipoSensor = "NIVEL_RIO", Nivel = "AMARILLO", ValorMinimo = 2.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está elevado.", Activo = true },
-            new() { Id = 2, TipoSensor = "NIVEL_RIO", Nivel = "NARANJA", ValorMinimo = 3.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río está en alerta moderada.", Activo = true },
-            new() { Id = 3, TipoSensor = "NIVEL_RIO", Nivel = "ROJO", ValorMinimo = 4.5m, Fenomeno = "INUNDACION", Mensaje = "El nivel del río supera el límite de seguridad.", Activo = true },
-            new() { Id = 4, TipoSensor = "VIENTO", Nivel = "AMARILLO", ValorMinimo = 40m, Fenomeno = "TORMENTA", Mensaje = "Se registró viento fuerte.", Activo = true },
-            new() { Id = 5, TipoSensor = "VIENTO", Nivel = "NARANJA", ValorMinimo = 60m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento está alta.", Activo = true },
-            new() { Id = 6, TipoSensor = "VIENTO", Nivel = "ROJO", ValorMinimo = 80m, Fenomeno = "TORMENTA", Mensaje = "La velocidad del viento supera el límite seguro.", Activo = true }
-        }.FirstOrDefault(r => r.Id == id);
+        var config = _configuracionAlertas.FirstOrDefault(r => r.Id == id);
         if (config is null) return Task.FromResult<ConfiguracionAlerta?>(null);
         config.Activo = activo;
         return Task.FromResult<ConfiguracionAlerta?>(config);
     }
 
-    public Task<bool> DeleteConfiguracionAlertaAsync(int id) => Task.FromResult(id > 0);
+    public Task<bool> DeleteConfiguracionAlertaAsync(int id)
+    {
+        var config = _configuracionAlertas.FirstOrDefault(r => r.Id == id);
+        return Task.FromResult(config is not null && _configuracionAlertas.Remove(config));
+    }
 
     public Task<DashboardSnapshot> GetDashboardSnapshotAsync(DashboardFiltersDto filters)
     {

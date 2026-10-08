@@ -109,7 +109,7 @@ BEGIN
         Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ConfiguracionAlertas PRIMARY KEY,
         TipoSensor NVARCHAR(50) NOT NULL,
         Nivel NVARCHAR(20) NOT NULL,
-        ValorMinimo DECIMAL(18,3) NOT NULL,
+        ValorMinimo DECIMAL(18,3) NULL,
         Fenomeno NVARCHAR(50) NOT NULL,
         Mensaje NVARCHAR(500) NOT NULL,
         Activo BIT NOT NULL CONSTRAINT DF_ConfiguracionAlertas_Activo DEFAULT 1,
@@ -251,6 +251,10 @@ IF COL_LENGTH(N'dbo.ConfiguracionAlertas', N'ValorMaximo') IS NULL
     ALTER TABLE dbo.ConfiguracionAlertas ADD ValorMaximo DECIMAL(18,3) NULL;
 GO
 
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.ConfiguracionAlertas') AND name = N'ValorMinimo' AND is_nullable = 0)
+    ALTER TABLE dbo.ConfiguracionAlertas ALTER COLUMN ValorMinimo DECIMAL(18,3) NULL;
+GO
+
 IF COL_LENGTH(N'dbo.Alertas', N'ConfiguracionAlertaId') IS NULL
     ALTER TABLE dbo.Alertas ADD ConfiguracionAlertaId INT NULL;
 GO
@@ -314,4 +318,75 @@ GO
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_Alertas_Usuarios_Cerrada')
     ALTER TABLE dbo.Alertas ADD CONSTRAINT FK_Alertas_Usuarios_Cerrada
         FOREIGN KEY (CerradaPorId) REFERENCES dbo.Usuarios (Id);
+GO
+
+UPDATE dbo.ConfiguracionAlertas
+SET Nombre = CASE Id
+    WHEN 1 THEN N'Río: precaución'
+    WHEN 2 THEN N'Río: alerta'
+    WHEN 3 THEN N'Río: emergencia'
+    WHEN 4 THEN N'Viento: precaución'
+    WHEN 5 THEN N'Viento: alerta'
+    WHEN 6 THEN N'Viento: emergencia'
+    ELSE CONCAT(TipoSensor, N' - ', Nivel)
+END
+WHERE Nombre IS NULL OR LTRIM(RTRIM(Nombre)) = N'';
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.ConfiguracionAlertas WHERE Nombre = N'Temperatura: aviso')
+    INSERT INTO dbo.ConfiguracionAlertas (Nombre, TipoSensor, ValorMinimo, ValorMaximo, Nivel, Fenomeno, Mensaje, Activo)
+    VALUES (N'Temperatura: aviso', N'TEMPERATURA', 35, NULL, N'AMARILLO', N'CALOR', N'[DEMO] Temperatura por encima del nivel normal.', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.ConfiguracionAlertas WHERE Nombre = N'Temperatura: alerta')
+    INSERT INTO dbo.ConfiguracionAlertas (Nombre, TipoSensor, ValorMinimo, ValorMaximo, Nivel, Fenomeno, Mensaje, Activo)
+    VALUES (N'Temperatura: alerta', N'TEMPERATURA', 39, NULL, N'NARANJA', N'CALOR', N'[DEMO] Temperatura en nivel de alerta.', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.ConfiguracionAlertas WHERE Nombre = N'Temperatura: emergencia')
+    INSERT INTO dbo.ConfiguracionAlertas (Nombre, TipoSensor, ValorMinimo, ValorMaximo, Nivel, Fenomeno, Mensaje, Activo)
+    VALUES (N'Temperatura: emergencia', N'TEMPERATURA', 43, NULL, N'ROJO', N'CALOR', N'[DEMO] Temperatura en nivel de emergencia.', 1);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.LecturasSensores WHERE SensorId = 1)
+    INSERT INTO dbo.LecturasSensores (SensorId, Valor, FechaHora) VALUES (1, 27.5, DATEADD(HOUR, -5, GETUTCDATE()));
+IF NOT EXISTS (SELECT 1 FROM dbo.LecturasSensores WHERE SensorId = 2)
+    INSERT INTO dbo.LecturasSensores (SensorId, Valor, FechaHora) VALUES (2, 78.0, DATEADD(HOUR, -4, GETUTCDATE()));
+IF NOT EXISTS (SELECT 1 FROM dbo.LecturasSensores WHERE SensorId = 3)
+    INSERT INTO dbo.LecturasSensores (SensorId, Valor, FechaHora) VALUES (3, 42.0, DATEADD(HOUR, -3, GETUTCDATE()));
+IF NOT EXISTS (SELECT 1 FROM dbo.LecturasSensores WHERE SensorId = 4)
+    INSERT INTO dbo.LecturasSensores (SensorId, Valor, FechaHora) VALUES (4, 18.5, DATEADD(HOUR, -2, GETUTCDATE()));
+IF NOT EXISTS (SELECT 1 FROM dbo.LecturasSensores WHERE SensorId = 5)
+    INSERT INTO dbo.LecturasSensores (SensorId, Valor, FechaHora) VALUES (5, 2.8, DATEADD(HOUR, -1, GETUTCDATE()));
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Nivel del río en precaución.')
+    INSERT INTO dbo.Alertas (SensorId, ConfiguracionAlertaId, Nivel, Fenomeno, Mensaje, ValorDetectado, FechaHora, Activa, ValorMinimo, ValorMaximo, Estado)
+    VALUES (5, 1, N'AMARILLO', N'INUNDACION', N'[DEMO] Nivel del río en precaución.', 2.8, DATEADD(DAY, -1, GETUTCDATE()), 1, 2.5, NULL, N'ACTIVA');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Viento fuerte atendido por operador.')
+    INSERT INTO dbo.Alertas (SensorId, ConfiguracionAlertaId, Nivel, Fenomeno, Mensaje, ValorDetectado, FechaHora, Activa, ValorMinimo, ValorMaximo, Estado, AtendidaPorId, FechaAtencion)
+    VALUES (3, 4, N'AMARILLO', N'TORMENTA', N'[DEMO] Viento fuerte atendido por operador.', 42.0, DATEADD(DAY, -2, GETUTCDATE()), 0, 40.0, NULL, N'ATENDIDA', 2, DATEADD(DAY, -2, GETUTCDATE()));
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Nivel del río en emergencia, alerta cerrada.')
+    INSERT INTO dbo.Alertas (SensorId, ConfiguracionAlertaId, Nivel, Fenomeno, Mensaje, ValorDetectado, FechaHora, Activa, ValorMinimo, ValorMaximo, Estado, CerradaPorId, FechaCierre)
+    VALUES (5, 3, N'ROJO', N'INUNDACION', N'[DEMO] Nivel del río en emergencia, alerta cerrada.', 4.8, DATEADD(DAY, -3, GETUTCDATE()), 0, 4.5, NULL, N'CERRADA', 2, DATEADD(DAY, -3, GETUTCDATE()));
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.HistorialEventos WHERE AlertaId = (SELECT TOP (1) Id FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Nivel del río en precaución.'))
+    INSERT INTO dbo.HistorialEventos (AlertaId, SensorId, Fenomeno, Nivel, Mensaje, FechaHora)
+    SELECT Id, 5, Fenomeno, Nivel, Mensaje, FechaHora FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Nivel del río en precaución.';
+IF NOT EXISTS (SELECT 1 FROM dbo.HistorialEventos WHERE AlertaId = (SELECT TOP (1) Id FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Viento fuerte atendido por operador.'))
+    INSERT INTO dbo.HistorialEventos (AlertaId, SensorId, Fenomeno, Nivel, Mensaje, FechaHora)
+    SELECT Id, 3, Fenomeno, Nivel, Mensaje, FechaHora FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Viento fuerte atendido por operador.';
+IF NOT EXISTS (SELECT 1 FROM dbo.HistorialEventos WHERE AlertaId = (SELECT TOP (1) Id FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Nivel del río en emergencia, alerta cerrada.'))
+    INSERT INTO dbo.HistorialEventos (AlertaId, SensorId, Fenomeno, Nivel, Mensaje, FechaHora)
+    SELECT Id, 5, Fenomeno, Nivel, Mensaje, FechaHora FROM dbo.Alertas WHERE Mensaje = N'[DEMO] Nivel del río en emergencia, alerta cerrada.';
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Bitacora WHERE Descripcion = N'[DEMO] Inicio de sesión de administrador.')
+    INSERT INTO dbo.Bitacora (UsuarioId, Usuario, Accion, Descripcion, FechaHora)
+    VALUES (1, N'admin', N'LOGIN', N'[DEMO] Inicio de sesión de administrador.', DATEADD(HOUR, -6, GETUTCDATE()));
+IF NOT EXISTS (SELECT 1 FROM dbo.Bitacora WHERE Descripcion = N'[DEMO] Se registró lectura para Sensor Viento 01.')
+    INSERT INTO dbo.Bitacora (UsuarioId, Usuario, Accion, Descripcion, FechaHora)
+    VALUES (2, N'operador', N'LECTURA_REGISTRADA', N'[DEMO] Se registró lectura para Sensor Viento 01.', DATEADD(HOUR, -3, GETUTCDATE()));
+IF NOT EXISTS (SELECT 1 FROM dbo.Bitacora WHERE Descripcion = N'[DEMO] Alerta de viento atendida.')
+    INSERT INTO dbo.Bitacora (UsuarioId, Usuario, Accion, Descripcion, FechaHora)
+    VALUES (2, N'operador', N'ALERTA_ATENDIDA', N'[DEMO] Alerta de viento atendida.', DATEADD(DAY, -2, GETUTCDATE()));
 GO

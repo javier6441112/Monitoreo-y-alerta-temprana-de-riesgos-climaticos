@@ -32,6 +32,10 @@ public sealed class LecturasService : ILecturasService
         var sensor = await _repository.GetSensorByIdAsync(request.SensorId);
         if (sensor is null)
             throw new KeyNotFoundException("Sensor no encontrado.");
+        if (!sensor.Activo)
+            throw new InvalidOperationException("No se pueden registrar lecturas para un sensor inactivo.");
+        if (!(await _repository.GetConfiguracionAlertasAsync(sensor.Tipo, activo: true)).Any())
+            throw new InvalidOperationException("No hay reglas de alerta activas para el tipo de este sensor.");
 
         var lectura = await _repository.CreateLecturaAsync(new LecturaSensor
         {

@@ -159,7 +159,12 @@ public class SqlWeatherRepository : IWeatherRepository
         if (!string.IsNullOrWhiteSpace(nivel)) query = query.Where(a => a.Nivel == nivel);
         if (!string.IsNullOrWhiteSpace(estado)) query = query.Where(a => a.Estado == estado);
 
-        return await query.Include(a => a.Sensor).OrderByDescending(a => a.FechaHora).ToListAsync();
+        return await query
+            .Include(a => a.Sensor).ThenInclude(sensor => sensor!.Comunidad)
+            .Include(a => a.AtendidaPor)
+            .Include(a => a.CerradaPor)
+            .OrderByDescending(a => a.FechaHora)
+            .ToListAsync();
     }
 
     public async Task<Alerta?> GetAlertaByIdAsync(int id) => await _context.Alertas.FirstOrDefaultAsync(a => a.Id == id);
@@ -177,7 +182,9 @@ public class SqlWeatherRepository : IWeatherRepository
         if (alerta is null)
             return null;
 
+        alerta.Estado = "CERRADA";
         alerta.Activa = false;
+        alerta.FechaCierre = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return alerta;
     }
@@ -188,6 +195,10 @@ public class SqlWeatherRepository : IWeatherRepository
         if (alerta is null) return null;
         alerta.Estado = estado;
         alerta.Activa = estado == "ACTIVA";
+        if (estado == "ATENDIDA")
+            alerta.FechaAtencion ??= DateTime.UtcNow;
+        if (estado == "CERRADA")
+            alerta.FechaCierre ??= DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return alerta;
     }
@@ -247,9 +258,11 @@ public class SqlWeatherRepository : IWeatherRepository
         if (existing is null)
             return null;
 
+        existing.Nombre = config.Nombre;
         existing.TipoSensor = config.TipoSensor;
         existing.Nivel = config.Nivel;
         existing.ValorMinimo = config.ValorMinimo;
+        existing.ValorMaximo = config.ValorMaximo;
         existing.Fenomeno = config.Fenomeno;
         existing.Mensaje = config.Mensaje;
         existing.Activo = config.Activo;

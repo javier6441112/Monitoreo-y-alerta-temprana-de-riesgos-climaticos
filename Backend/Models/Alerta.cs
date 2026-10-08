@@ -14,11 +14,7 @@ public class Alerta
     public decimal? ValorMinimo { get; set; }
     public decimal? ValorMaximo { get; set; }
     public string Estado { get; set; } = "ACTIVA";
-    public bool Activa
-    {
-        get => Estado == "ACTIVA";
-        set => Estado = value ? "ACTIVA" : "CERRADA";
-    }
+    public bool Activa { get; set; } = true;
     public int? AtendidaPorId { get; set; }
     public Usuario? AtendidaPor { get; set; }
     public DateTime? FechaAtencion { get; set; }

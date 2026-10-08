@@ -26,9 +26,11 @@ public sealed class ConfiguracionAlertaService : IConfiguracionAlertaService
     {
         var config = await _repository.CreateConfiguracionAlertaAsync(new ConfiguracionAlerta
         {
+            Nombre = request.Nombre,
             TipoSensor = request.TipoSensor,
             Nivel = request.Nivel,
             ValorMinimo = request.ValorMinimo,
+            ValorMaximo = request.ValorMaximo,
             Fenomeno = request.Fenomeno,
             Mensaje = request.Mensaje,
             Activo = request.Activo
@@ -41,9 +43,11 @@ public sealed class ConfiguracionAlertaService : IConfiguracionAlertaService
     {
         var updated = await _repository.UpdateConfiguracionAlertaAsync(id, new ConfiguracionAlerta
         {
+            Nombre = request.Nombre,
             TipoSensor = request.TipoSensor,
             Nivel = request.Nivel,
             ValorMinimo = request.ValorMinimo,
+            ValorMaximo = request.ValorMaximo,
             Fenomeno = request.Fenomeno,
             Mensaje = request.Mensaje,
             Activo = request.Activo
