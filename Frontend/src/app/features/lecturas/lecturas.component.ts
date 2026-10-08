@@ -48,13 +48,24 @@ import { AuthService } from '../../core/services/auth/auth.service';
         <mat-card-content>
           <form [formGroup]="readingForm" (ngSubmit)="submit()" class="reading-form">
             <mat-form-field appearance="outline">
+              <mat-label>Comunidad</mat-label>
+              <mat-select formControlName="comunidadRegistroId" (selectionChange)="onCommunityChange()">
+                <mat-option [value]="null">Selecciona una comunidad</mat-option>
+                <mat-option *ngFor="let community of communities" [value]="community.id">
+                  {{ community.nombre }}
+                </mat-option>
+              </mat-select>
+              <mat-error>Selecciona una comunidad</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
               <mat-label>Sensor</mat-label>
               <mat-select formControlName="sensorId">
-                <mat-option *ngFor="let sensor of sensores" [value]="sensor.id">
+                <mat-option *ngFor="let sensor of sensoresDisponibles" [value]="sensor.id">
                   {{ sensor.nombre }} ({{ sensor.unidad }})
                 </mat-option>
               </mat-select>
-              <mat-error>Selecciona un sensor</mat-error>
+              <mat-error>Selecciona un sensor de la comunidad</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -162,6 +173,12 @@ export class LecturasComponent implements OnInit {
     const communityId = this.readingForm.controls.comunidadId.value;
     return communityId ? this.allSensors.filter(sensor => sensor.comunidadId === communityId) : this.allSensors;
   }
+  get sensoresDisponibles(): Sensor[] {
+    const communityId = this.readingForm.controls.comunidadRegistroId.value;
+    return communityId
+      ? this.allSensors.filter(sensor => sensor.comunidadId === communityId && sensor.activo)
+      : [];
+  }
   get canOperate(): boolean { return this.authService.hasRole(['ADMIN', 'OPERADOR']); }
 
   readingForm;
@@ -177,12 +194,26 @@ export class LecturasComponent implements OnInit {
     this.readingForm = this.formBuilder.group({
       sensorId: [null as number | null, Validators.required],
       valor: [null as number | null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
-      comunidadId: [null as number | null], filtroSensorId: [null as number | null], desde: [''], hasta: ['']
+      comunidadRegistroId: [null as number | null, Validators.required],
+      comunidadId: [null as number | null],
+      filtroSensorId: [null as number | null],
+      desde: [''],
+      hasta: ['']
     });
   }
 
   ngOnInit(): void {
-    this.communityService.getAll().subscribe({ next: communities => this.communities = communities, error: () => this.communities = [] });
+    this.communityService.getAll().subscribe({
+      next: communities => {
+        this.communities = communities;
+        if (communities.length) {
+          this.readingForm.controls.comunidadRegistroId.setValue(communities[0].id);
+          this.onCommunityChange();
+        }
+      },
+      error: () => this.communities = []
+    });
+
     this.sensorService.getSensores().subscribe({
       next: sensores => {
         this.allSensors = sensores;
@@ -190,11 +221,19 @@ export class LecturasComponent implements OnInit {
         if (this.sensores.length) {
           this.readingForm.controls.sensorId.setValue(this.sensores[0].id);
           this.updateUnit();
-          this.loadReadings();
         }
+        this.onCommunityChange();
+        this.loadReadings();
       },
       error: () => this.snackBar.open('No se pudieron cargar los sensores', 'Cerrar', { duration: 3000 })
     });
+  }
+
+  onCommunityChange(): void {
+    const communityId = this.readingForm.controls.comunidadRegistroId.value;
+    const availableSensors = this.allSensors.filter(sensor => sensor.activo && sensor.comunidadId === communityId);
+    this.readingForm.controls.sensorId.setValue(availableSensors[0]?.id ?? null);
+    this.updateUnit();
   }
 
   loadReadings(): void {

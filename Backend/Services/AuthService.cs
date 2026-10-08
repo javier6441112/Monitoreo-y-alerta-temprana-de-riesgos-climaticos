@@ -24,6 +24,10 @@ public sealed class AuthService : IAuthService
         if (usuario is null || !usuario.Activo || !PasswordHasher.Verify(request.Password, usuario.PasswordHash))
             throw new InvalidOperationException("Credenciales inválidas");
 
+        var now = DateTime.UtcNow;
+        if (!await _repository.UpdateUltimoAccesoAsync(usuario.Id, now))
+            throw new InvalidOperationException("No se pudo actualizar el último acceso del usuario.");
+
         var expiresAt = DateTime.UtcNow.AddHours(8);
         var key = _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("La configuración Jwt:Key es obligatoria.");

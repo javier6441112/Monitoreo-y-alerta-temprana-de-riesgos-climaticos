@@ -45,6 +45,17 @@ public class SqlWeatherRepository : IWeatherRepository
         return existing;
     }
 
+    public async Task<bool> UpdateUltimoAccesoAsync(int usuarioId, DateTime ultimoAcceso)
+    {
+        var usuario = await _context.Usuarios.FindAsync(usuarioId);
+        if (usuario is null)
+            return false;
+
+        usuario.UltimoAcceso = ultimoAcceso;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<Usuario?> SetUsuarioActivoAsync(int id, bool activo)
     {
         var existing = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);

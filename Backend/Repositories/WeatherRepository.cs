@@ -86,6 +86,16 @@ public class WeatherRepository : IWeatherRepository
         return Task.FromResult<Usuario?>(existing);
     }
 
+    public Task<bool> UpdateUltimoAccesoAsync(int usuarioId, DateTime ultimoAcceso)
+    {
+        var usuario = _usuarios.FirstOrDefault(u => u.Id == usuarioId);
+        if (usuario is null)
+            return Task.FromResult(false);
+
+        usuario.UltimoAcceso = ultimoAcceso;
+        return Task.FromResult(true);
+    }
+
     public Task<Usuario?> SetUsuarioActivoAsync(int id, bool activo)
     {
         var existing = _usuarios.FirstOrDefault(u => u.Id == id);

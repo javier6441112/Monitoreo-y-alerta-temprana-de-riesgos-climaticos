@@ -10,7 +10,20 @@ public sealed class UsuariosService : IUsuariosService
 
     public UsuariosService(IWeatherRepository repository) => _repository = repository;
 
-    public Task<List<Usuario>> GetAllAsync() => _repository.GetUsuariosAsync();
+    public async Task<List<Usuario>> GetAllAsync(string? buscar = null, string? rol = null, bool? activo = null)
+    {
+        var usuarios = await _repository.GetUsuariosAsync();
+        var texto = buscar?.Trim();
+        var rolNormalizado = rol?.Trim().ToUpperInvariant();
+
+        return usuarios.Where(usuario =>
+                (string.IsNullOrWhiteSpace(texto) ||
+                 usuario.Nombre.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
+                 usuario.Username.Contains(texto, StringComparison.OrdinalIgnoreCase)) &&
+                (string.IsNullOrWhiteSpace(rolNormalizado) || usuario.Rol.Equals(rolNormalizado, StringComparison.OrdinalIgnoreCase)) &&
+                (!activo.HasValue || usuario.Activo == activo.Value))
+            .ToList();
+    }
 
     public Task<Usuario?> GetByIdAsync(int id) => _repository.GetUsuarioByIdAsync(id);
 

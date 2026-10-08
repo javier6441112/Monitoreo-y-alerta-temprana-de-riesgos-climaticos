@@ -9,6 +9,7 @@ public interface IWeatherRepository
     Task<Usuario?> GetUsuarioByUsernameAsync(string username);
     Task<Usuario> CreateUsuarioAsync(Usuario usuario);
     Task<Usuario?> UpdateUsuarioAsync(int id, Usuario usuario);
+    Task<bool> UpdateUltimoAccesoAsync(int usuarioId, DateTime ultimoAcceso);
     Task<Usuario?> SetUsuarioActivoAsync(int id, bool activo);
     Task<List<Sensor>> GetSensoresAsync();
     Task<Sensor?> GetSensorByIdAsync(int id);

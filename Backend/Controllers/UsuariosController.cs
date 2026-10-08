@@ -18,9 +18,12 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<UsuarioDto>>> GetUsuarios()
+    public async Task<ActionResult<List<UsuarioDto>>> GetUsuarios(
+        [FromQuery] string? buscar,
+        [FromQuery] string? rol,
+        [FromQuery] bool? activo)
     {
-        var usuarios = await _usuariosService.GetAllAsync();
+        var usuarios = await _usuariosService.GetAllAsync(buscar, rol, activo);
         return Ok(usuarios.Select(ToDto).ToList());
     }
 
