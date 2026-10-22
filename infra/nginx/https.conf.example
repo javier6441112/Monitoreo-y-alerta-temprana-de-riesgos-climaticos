@@ -1,0 +1,23 @@
+# Example for the VPS host's Nginx. Replace domain and provision certificates first.
+# Local services bind to 127.0.0.1; only this proxy should expose the public site.
+server {
+    listen 80;
+    server_name clima.example.com;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name clima.example.com;
+    ssl_certificate /etc/letsencrypt/live/clima.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/clima.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    location / {
+        proxy_pass http://127.0.0.1:4200;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 120s;
+    }
+}

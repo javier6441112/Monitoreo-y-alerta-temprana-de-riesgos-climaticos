@@ -1,0 +1,18 @@
+services:
+  migrate:
+    profiles: [migration]
+    build: {context: ., dockerfile: Tools/Migration/Dockerfile}
+    environment:
+      LEGACY_SQL_HOST: ${LEGACY_SQL_HOST:-host.docker.internal}
+      LEGACY_SQL_PORT: ${LEGACY_SQL_PORT:-1433}
+      LEGACY_SQL_DATABASE: ${LEGACY_SQL_DATABASE:-ClimateRiskDb}
+      LEGACY_SQL_USER: ${LEGACY_SQL_USER:-sa}
+      LEGACY_SQL_PASSWORD: ${LEGACY_SQL_PASSWORD:-}
+      AUTH_DATABASE_URL: postgresql://auth:${POSTGRES_PASSWORD}@auth-postgres:5432/auth
+      COMMUNITY_DATABASE_URL: postgresql://community:${POSTGRES_PASSWORD}@community-postgres:5432/community
+      ALERT_DATABASE_URL: postgresql://alert:${POSTGRES_PASSWORD}@alert-postgres:5432/alert
+      SENSOR_SQL_HOST: sensor-db
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      AUDIT_MONGO_URL: mongodb://audit:${MONGO_AUDIT_PASSWORD}@mongo:27017/audit?authSource=audit
+    volumes: [./artifacts:/artifacts]
+    networks: [backend, edge]

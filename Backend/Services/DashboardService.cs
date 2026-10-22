@@ -5,9 +5,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class DashboardService : IDashboardService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IDashboardRepository _repository;
 
-    public DashboardService(IWeatherRepository repository) => _repository = repository;
+    public DashboardService(IDashboardRepository repository) => _repository = repository;
 
     public async Task<DashboardDto> GetAsync(DashboardFiltersDto filters)
     {

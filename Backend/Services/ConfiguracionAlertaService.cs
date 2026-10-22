@@ -6,9 +6,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class ConfiguracionAlertaService : IConfiguracionAlertaService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAlertaRepository _repository;
 
-    public ConfiguracionAlertaService(IWeatherRepository repository)
+    public ConfiguracionAlertaService(IAlertaRepository repository)
     {
         _repository = repository;
     }

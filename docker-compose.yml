@@ -1,59 +1,250 @@
+name: climate-phase3
+
+x-service-env: &service-env
+  JWT_KEY: ${JWT_KEY:?Run scripts/init-env.ps1}
+  SERVICE_KEY: ${SERVICE_KEY:?Run scripts/init-env.ps1}
+  JWT_ISSUER: WeatherRisk.Auth
+  JWT_AUDIENCE: WeatherRisk
+  AUTH_URL: http://auth:8080
+  COMMUNITY_URL: http://community:8080
+  SENSOR_URL: http://sensor:8080
+  ALERT_URL: http://alert:8080
+  REPORT_URL: http://report:8080
+  AUDIT_URL: http://audit:8080
+
 services:
-  db:
-    build:
-      context: ./BaseDeDatos
-      dockerfile: Dockerfile
+  auth-postgres:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/init-env.ps1}
+    volumes: [auth-data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  community-postgres:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: community
+      POSTGRES_USER: community
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/init-env.ps1}
+    volumes: [community-data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U community -d community"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  alert-postgres:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: alert
+      POSTGRES_USER: alert
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/init-env.ps1}
+    volumes: [alert-data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alert -d alert"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  sensor-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-desa123$}
-      DB_NAME: ${DB_NAME:-ClimateRiskDb}
-    ports:
-      - "${DB_PORT:-1433}:1433"
-    volumes:
-      - sqlserver-data:/var/opt/mssql
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Run scripts/init-env.ps1}
+    volumes: [sensor-data:/var/opt/mssql]
+    networks: [backend]
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\""]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Run scripts/init-env.ps1}
+      MONGO_REPORT_PASSWORD: ${MONGO_REPORT_PASSWORD:?Run scripts/init-env.ps1}
+      MONGO_AUDIT_PASSWORD: ${MONGO_AUDIT_PASSWORD:?Run scripts/init-env.ps1}
+    volumes:
+      - mongo-data:/data/db
+      - ./infra/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  auth:
+    image: weather-risk-auth:phase3
+    build:
+      context: .
+      dockerfile: Services/Auth/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://auth:${POSTGRES_PASSWORD}@auth-postgres:5432/auth
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    networks: [backend]
+    depends_on:
+      auth-postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 20
-      start_period: 20s
-    networks:
-      - climate-risk-network
-
-  api:
+      start_period: 30s
+  community:
+    image: weather-risk-community:phase3
     build:
-      context: ./Backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Services/Community/Dockerfile
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=${DB_NAME:-ClimateRiskDb};User Id=sa;Password=${MSSQL_SA_PASSWORD:-desa123$};TrustServerCertificate=True;Encrypt=False"
-    ports:
-     - "${API_PORT:-5000}:8080" 
-    networks:
-      - climate-risk-network
-
-  frontend:
+      <<: *service-env
+      DATABASE_URL: Host=community-postgres;Database=community;Username=community;Password=${POSTGRES_PASSWORD}
+    networks: [backend]
+    depends_on:
+      community-postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  sensor:
+    image: weather-risk-sensor:phase3
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Services/Sensor/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *service-env
+      DATABASE_URL: Server=sensor-db,1433;Database=WeatherRiskSensors;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=True
+    networks: [backend]
+    depends_on:
+      sensor-db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  alert:
+    image: weather-risk-alert:phase3
+    build:
+      context: .
+      dockerfile: Services/Alert/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *service-env
+      DATABASE_URL: jdbc:postgresql://alert-postgres:5432/alert
+      DATABASE_USER: alert
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+    networks: [backend]
+    depends_on:
+      alert-postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  report:
+    image: weather-risk-report:phase3
+    build:
+      context: .
+      dockerfile: Services/Report/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *service-env
+      MONGO_URL: mongodb://report:${MONGO_REPORT_PASSWORD}@mongo:27017/report?authSource=report
+      MONGO_DATABASE: report
+    networks: [backend]
+    depends_on:
+      mongo: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  audit:
+    image: weather-risk-audit:phase3
+    build:
+      context: .
+      dockerfile: Services/Audit/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *service-env
+      MONGO_URL: mongodb://audit:${MONGO_AUDIT_PASSWORD}@mongo:27017/audit?authSource=audit
+      MONGO_DATABASE: audit
+    networks: [backend]
+    depends_on:
+      mongo: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  gateway:
+    image: weather-risk-gateway:phase3
+    build:
+      context: .
+      dockerfile: Gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *service-env
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+    ports: ["${BIND_ADDRESS:-127.0.0.1}:${API_PORT:-5000}:8080"]
+    networks: [backend, edge]
+    depends_on:
+      auth: {condition: service_healthy}
+      community: {condition: service_healthy}
+      sensor: {condition: service_healthy}
+      alert: {condition: service_healthy}
+      report: {condition: service_healthy}
+      audit: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  frontend:
+    build: {context: ./Frontend, dockerfile: Dockerfile}
     restart: unless-stopped
     depends_on:
-      - api
-    ports:
-      - "${FRONTEND_PORT:-4200}:80"
-    networks:
-      - climate-risk-network
+      gateway: {condition: service_healthy}
+    ports: ["${BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-4200}:80"]
+    networks: [edge]
 
 volumes:
-  sqlserver-data:
-    name: climate-risk-sqlserver-data
+  auth-data:
+    name: ${DATA_VOLUME_PREFIX:-climate-phase3}_auth-data
+  community-data:
+    name: ${DATA_VOLUME_PREFIX:-climate-phase3}_community-data
+  alert-data:
+    name: ${DATA_VOLUME_PREFIX:-climate-phase3}_alert-data
+  sensor-data:
+    name: ${DATA_VOLUME_PREFIX:-climate-phase3}_sensor-data
+  mongo-data:
+    name: ${DATA_VOLUME_PREFIX:-climate-phase3}_mongo-data
 
 networks:
-  climate-risk-network:
-    name: climate-risk-network
+  backend: {internal: true}
+  edge:

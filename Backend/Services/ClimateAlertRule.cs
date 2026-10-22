@@ -5,9 +5,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class ClimateAlertRule : IAlertRule
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAlertaRepository _repository;
 
-    public ClimateAlertRule(IWeatherRepository repository)
+    public ClimateAlertRule(IAlertaRepository repository)
     {
         _repository = repository;
     }

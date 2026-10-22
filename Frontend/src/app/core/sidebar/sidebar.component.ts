@@ -21,6 +21,7 @@ import { AuthService } from '../services/auth/auth.service';
       <a routerLink="/historial" routerLinkActive="active"><mat-icon>history</mat-icon><span>Historial</span></a>
       <ng-container *ngIf="isAdmin">
         <p class="nav-label nav-label-admin">ADMINISTRACIÓN</p>
+        <a routerLink="/reportes" routerLinkActive="active"><mat-icon>picture_as_pdf</mat-icon><span>Reportes</span></a>
         <a routerLink="/configuracion-alertas" routerLinkActive="active"><mat-icon>tune</mat-icon><span>Reglas de alerta</span></a>
         <a routerLink="/usuarios" routerLinkActive="active"><mat-icon>manage_accounts</mat-icon><span>Usuarios</span></a>
         <a routerLink="/bitacora" routerLinkActive="active"><mat-icon>receipt_long</mat-icon><span>Bitácora</span></a>

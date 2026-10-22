@@ -8,16 +8,19 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class LecturasService : ILecturasService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly ISensorRepository _repository;
+    private readonly IAlertaRepository _alertas;
     private readonly IAlertEvaluationService _alertEvaluation;
     private readonly IHubContext<MonitoreoHub> _hubContext;
 
     public LecturasService(
-        IWeatherRepository repository,
+        ISensorRepository repository,
+        IAlertaRepository alertas,
         IAlertEvaluationService alertEvaluation,
         IHubContext<MonitoreoHub> hubContext)
     {
         _repository = repository;
+        _alertas = alertas;
         _alertEvaluation = alertEvaluation;
         _hubContext = hubContext;
     }
@@ -34,7 +37,7 @@ public sealed class LecturasService : ILecturasService
             throw new KeyNotFoundException("Sensor no encontrado.");
         if (!sensor.Activo)
             throw new InvalidOperationException("No se pueden registrar lecturas para un sensor inactivo.");
-        if (!(await _repository.GetConfiguracionAlertasAsync(sensor.Tipo, activo: true)).Any())
+        if (!(await _alertas.GetConfiguracionAlertasAsync(sensor.Tipo, activo: true)).Any())
             throw new InvalidOperationException("No hay reglas de alerta activas para el tipo de este sensor.");
 
         var lectura = await _repository.CreateLecturaAsync(new LecturaSensor

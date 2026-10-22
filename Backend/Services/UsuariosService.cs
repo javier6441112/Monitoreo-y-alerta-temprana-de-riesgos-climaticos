@@ -6,9 +6,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class UsuariosService : IUsuariosService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IUsuarioRepository _repository;
 
-    public UsuariosService(IWeatherRepository repository) => _repository = repository;
+    public UsuariosService(IUsuarioRepository repository) => _repository = repository;
 
     public async Task<List<Usuario>> GetAllAsync(string? buscar = null, string? rol = null, bool? activo = null)
     {

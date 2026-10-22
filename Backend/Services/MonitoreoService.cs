@@ -5,9 +5,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class MonitoreoService : IMonitoreoService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAuditRepository _repository;
 
-    public MonitoreoService(IWeatherRepository repository) => _repository = repository;
+    public MonitoreoService(IAuditRepository repository) => _repository = repository;
 
     public async Task<string> RestartAsync(string username, int? userId)
     {

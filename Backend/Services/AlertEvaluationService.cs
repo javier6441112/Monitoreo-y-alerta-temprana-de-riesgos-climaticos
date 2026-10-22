@@ -8,16 +8,19 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class AlertEvaluationService : IAlertEvaluationService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAlertaRepository _repository;
+    private readonly IAuditRepository _audit;
     private readonly IEnumerable<IAlertRule> _rules;
     private readonly IHubContext<MonitoreoHub> _hubContext;
 
     public AlertEvaluationService(
-        IWeatherRepository repository,
+        IAlertaRepository repository,
+        IAuditRepository audit,
         IEnumerable<IAlertRule> rules,
         IHubContext<MonitoreoHub> hubContext)
     {
         _repository = repository;
+        _audit = audit;
         _rules = rules;
         _hubContext = hubContext;
     }
@@ -43,7 +46,7 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
             Activa = true
         });
 
-        await _repository.CreateBitacoraAsync(new Bitacora
+        await _audit.CreateBitacoraAsync(new Bitacora
         {
             UsuarioId = 1,
             Usuario = "sistema",
@@ -51,7 +54,7 @@ public sealed class AlertEvaluationService : IAlertEvaluationService
             Descripcion = $"Se generó alerta {decision.Nivel} para {sensor.Nombre}."
         });
 
-        await _repository.CreateBitacoraAsync(new Bitacora
+        await _audit.CreateBitacoraAsync(new Bitacora
         {
             UsuarioId = 1,
             Usuario = "sistema",

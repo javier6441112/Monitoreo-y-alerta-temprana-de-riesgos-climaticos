@@ -5,9 +5,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class BitacoraService : IBitacoraService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAuditRepository _repository;
 
-    public BitacoraService(IWeatherRepository repository) => _repository = repository;
+    public BitacoraService(IAuditRepository repository) => _repository = repository;
 
     public async Task<List<BitacoraDto>> GetAllAsync(DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null, string? accion = null, string? entidad = null)
     {

@@ -9,10 +9,10 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class AuthService : IAuthService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IUsuarioRepository _repository;
     private readonly IConfiguration _configuration;
 
-    public AuthService(IWeatherRepository repository, IConfiguration configuration)
+    public AuthService(IUsuarioRepository repository, IConfiguration configuration)
     {
         _repository = repository;
         _configuration = configuration;

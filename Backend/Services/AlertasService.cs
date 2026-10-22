@@ -6,9 +6,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class AlertasService : IAlertasService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAlertaRepository _repository;
 
-    public AlertasService(IWeatherRepository repository) => _repository = repository;
+    public AlertasService(IAlertaRepository repository) => _repository = repository;
 
     public async Task<List<AlertaDto>> GetAllAsync(bool? activas, DateTime? desde = null, DateTime? hasta = null, int? comunidadId = null, int? sensorId = null, string? fenomeno = null, string? nivel = null, string? estado = null) =>
         (await _repository.GetAlertasAsync(activas, desde, hasta, comunidadId, sensorId, fenomeno, nivel, estado)).Select(Map).ToList();

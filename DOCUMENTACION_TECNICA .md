@@ -1,5 +1,7 @@
 # Documentación Técnica del Proyecto
 
+> Este documento describe principalmente la versión monolítica. La arquitectura activa y el traslado de datos de fase 3 se documentan en [Microservicios](docs/fase-3/MICROSERVICIOS.md).
+
 **Link del proyecto**
 [Monitoreo y alerta temprana de riesgos climaticos](https://github.com/javier6441112/Monitoreo-y-alerta-temprana-de-riesgos-climaticos.git)
 ##Integrantes 
@@ -216,12 +218,16 @@ Los servicios inyectados en la aplicación incluyen:
 - `IAlertRule`
 - `IConfiguracionAlertaService`
 
-### 8.3 Repositorio central
-La aplicación usa un repositorio compartido:
-- `IWeatherRepository`
-- `SqlWeatherRepository`
+### 8.3 Repositorios por dominio
+La primera refactorización de fase 3 separa la persistencia en contratos e implementaciones SQL:
+- `IUsuarioRepository` / `SqlUsuarioRepository`.
+- `IComunidadRepository` / `SqlComunidadRepository`.
+- `ISensorRepository` / `SqlSensorRepository`.
+- `IAlertaRepository` / `SqlAlertaRepository`.
+- `IAuditRepository` / `SqlAuditRepository`.
+- `IDashboardRepository` / `SqlDashboardRepository`.
 
-Este repositorio encapsula operaciones de lectura y escritura sobre todo el modelo del dominio, incluyendo sensores, alertas, historial y dashboard.
+El registro se concentra en `AddWeatherRiskApplication`. Los repositorios aún comparten `WeatherDbContext` y SQL Server; la separación en microservicios sigue pendiente. El diseño y los acoplamientos restantes se describen en [Arquitectura de fase 3](docs/fase-3/ARQUITECTURA.md).
 
 ### 8.4 Capa de datos
 Los modelos principales se encuentran en la carpeta `Backend/Models`.

@@ -5,9 +5,9 @@ namespace WeatherRisk.Api.Services;
 
 public sealed class HistorialService : IHistorialService
 {
-    private readonly IWeatherRepository _repository;
+    private readonly IAlertaRepository _repository;
 
-    public HistorialService(IWeatherRepository repository) => _repository = repository;
+    public HistorialService(IAlertaRepository repository) => _repository = repository;
 
     public Task<List<HistorialDto>> GetAllAsync(HistorialFiltersDto filters) =>
         _repository.GetFilteredHistorialAsync(filters);
