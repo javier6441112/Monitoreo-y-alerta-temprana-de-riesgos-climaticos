@@ -1,3 +1,5 @@
+> Documento historico de una etapa anterior. El codigo monolitico fue retirado. Consultar el [README](../../README.md) para la arquitectura activa.
+
 # Reingeniería de fase 3
 
 > Registro del primer incremento de diseño y refactorización. La extracción ya se implementó: consultar [Microservicios: implementación y operación](MICROSERVICIOS.md) para el estado vigente.

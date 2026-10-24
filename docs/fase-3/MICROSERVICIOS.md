@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-La arquitectura activa de `docker-compose.yml` ejecuta Gateway y seis aplicaciones independientes. No usa el backend monolítico como destino ni comparte su DbContext. Angular conserva sus rutas y consume Nginx → Gateway → APIs. `Backend/` y `docker-compose.legacy.yml` quedan como referencia de la versión anterior.
+La arquitectura activa de `docker-compose.yml` ejecuta Gateway y seis aplicaciones independientes. No usa el backend monolítico como destino ni comparte su DbContext. Angular conserva sus rutas y consume Nginx → Gateway → APIs. El codigo y el despliegue del monolito anterior se retiraron; su historial permanece en Git.
 
 | Componente | Código | Tecnología | Datos propios |
 |---|---|---|---|
@@ -126,33 +126,11 @@ El exportador leyó y validó relaciones y hashes; después se importó en volú
 
 Se comprobaron cantidades, IDs por API y hashes de contraseña idénticos. El contenedor de la copia quedó detenido. Los exportados están en artifacts/ y contienen hashes: son material privado, excluido de Git, y no deben adjuntarse a la entrega.
 
-### Repetir el procedimiento en otro entorno
+### Herramientas de importacion conservadas
 
-1. Detener escrituras del monolito y respaldar su base. Mantener el origen disponible para reversión.
-2. Configurar credenciales LEGACY_SQL_* en un archivo privado de entorno. No usar contraseñas en el historial de comandos.
-3. Seleccionar un DATA_VOLUME_PREFIX nuevo. Arrancar destinos con `docker-compose.bootstrap-migration.yml` para evitar usuarios de bootstrap. Al cambiar volúmenes, recrear todos los contenedores para inicializar esquemas:
+`Tools/Migration/` y `scripts/verify-migrated.mjs` se conservan como herramientas administrativas para datos historicos; no forman parte del despliegue activo. Los archivos Compose de migracion y el frontend legacy ya no estan disponibles. La version anterior del procedimiento permanece en el historial de Git.
 
-```powershell
-docker compose -f docker-compose.yml -f docker-compose.bootstrap-migration.yml up -d --force-recreate --wait
-```
-
-4. Exportar sin escribir destinos:
-
-```powershell
-docker compose --env-file .env --env-file .env.migration-source -f docker-compose.yml -f docker-compose.migration.yml run --rm --no-deps migrate --output /artifacts/legacy-export.json
-```
-
-5. Detener las aplicaciones y conservar las bases encendidas. Ejecutar la importación solo sobre destinos vacíos:
-
-```powershell
-docker compose stop frontend gateway auth community sensor alert report audit
-docker compose -f docker-compose.yml -f docker-compose.migration.yml run --rm --no-deps migrate --input /artifacts/legacy-export.json --output /artifacts/legacy-export-verified.json --apply
-docker compose up -d --wait
-```
-
-El importador rechaza destinos no vacíos y conserva IDs; reseña secuencias para nuevas inserciones. Las transacciones relacionales se validan antes de commit. No existe una transacción distribuida entre todos los gestores: si un fallo ocurre después de algún commit o escritura Mongo, restaurar destinos nuevos antes de repetir. Nunca limpiar automáticamente una base en uso.
-
-Reversión antes de aceptar escrituras nuevas: restaurar configuración/volúmenes anteriores y las rutas del despliegue legacy. El frontend legacy utiliza nginx.legacy.conf. Después de aceptar nuevas escrituras, se necesita reconciliarlas; volver al origen sin hacerlo perdería cambios. En esta máquina .env.integration-backup conserva la selección de los volúmenes de pruebas, y el volumen original del monolito permanece intacto.
+Para otra importacion hay que preparar las conexiones de origen y destino, respaldar las bases y utilizar destinos vacios. No ejecutar `--apply` contra bases en uso. Las exportaciones privadas y los volumenes existentes se conservan.
 
 ## Verificación realizada
 

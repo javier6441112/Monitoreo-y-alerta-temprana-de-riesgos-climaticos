@@ -1,3 +1,5 @@
+> Documento historico de una etapa anterior. El codigo monolitico fue retirado. Consultar el [README](README.md) para la arquitectura activa.
+
 # Faltantes de Fase 2 y contrato API
 
 Este documento contrasta los requisitos de `phase_2.md` con el código presente en el repositorio y propone un contrato común para que backend y frontend puedan avanzar en paralelo. El apartado de infraestructura se limita a Docker y Docker Compose; no incluye VPS, dominio ni HTTPS.

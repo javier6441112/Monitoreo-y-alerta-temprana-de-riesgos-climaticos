@@ -1,3 +1,5 @@
+> Documento historico de una etapa anterior. El codigo monolitico fue retirado. Consultar el [README](../../README.md) para la arquitectura activa.
+
 # Inventario HTTP y línea base
 
 > Inventario histórico del monolito usado para preservar compatibilidad. Las rutas activas, cambios explícitos y contratos nuevos se describen en [Microservicios](MICROSERVICIOS.md).

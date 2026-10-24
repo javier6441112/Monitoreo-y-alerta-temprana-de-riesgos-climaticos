@@ -27,6 +27,6 @@ Los usuarios importados conservan sus contraseñas anteriores. ADMIN_PASSWORD so
 - [Lista de tareas de fase 3](TAREAS_FASE_3.md).
 - [Diseño inicial de la reingeniería](docs/fase-3/ARQUITECTURA.md).
 
-La carpeta Backend contiene la versión monolítica anterior. El despliegue activo no la utiliza. docker-compose.legacy.yml y nginx.legacy.conf permiten consultar esa configuración, utilizando su propio archivo de entorno.
+El repositorio contiene la arquitectura activa de microservicios. Se retiraron el backend monolitico, su despliegue y sus pruebas. Las herramientas administrativas de importacion se conservan en `Tools/Migration/`.
 
 El VPS, HTTPS y la actualización de Angular 20 a 22+ siguen pendientes. No se deben subir archivos .env ni exportaciones privadas de la base de datos.

@@ -1,3 +1,5 @@
+> Documento historico de una etapa anterior. El codigo monolitico fue retirado. Consultar el [README](README.md) para la arquitectura activa.
+
 # Documentación Técnica del Proyecto
 
 > Este documento describe principalmente la versión monolítica. La arquitectura activa y el traslado de datos de fase 3 se documentan en [Microservicios](docs/fase-3/MICROSERVICIOS.md).
