@@ -1,0 +1,40 @@
+# Angular
+Frontend/.angular/
+Frontend/dist/
+Frontend/node_modules/
+Frontend/.env.local
+Frontend/.env.*
+
+# .NET (los archivos ya versionados requieren limpieza del índice por separado)
+**/bin/
+**/obj/
+TestResults/
+
+# Configuración local
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Docker
+*.log
+**/node_modules/
+**/dist/
+**/target/
+**/__pycache__/
+.tools/
+artifacts/

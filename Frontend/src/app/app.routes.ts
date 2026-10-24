@@ -1,0 +1,82 @@
+import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth/auth-guard';
+import { roleGuard } from './core/guards/auth/role-guard';
+
+export const routes: Routes = [
+  {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: '',
+    loadComponent: () => import('./core/layout/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      {
+        path: 'comunidades',
+        loadComponent: () => import('./features/comunidades/comunidades.component').then(m => m.ComunidadesComponent)
+      },
+      {
+        path: 'sensores',
+        loadComponent: () => import('./features/sensores/list/list.component').then(m => m.ListComponent)
+      },
+      {
+        path: 'lecturas',
+        loadComponent: () => import('./features/lecturas/lecturas.component').then(m => m.LecturasComponent)
+      },
+      {
+        path: 'sensores/nuevo',
+        loadComponent: () => import('./features/sensores/form/form.component').then(m => m.FormComponent)
+      },
+      {
+        path: 'sensores/editar/:id',
+        loadComponent: () => import('./features/sensores/form/form.component').then(m => m.FormComponent)
+      },
+      {
+        path: 'alertas',
+        loadComponent: () => import('./features/alertas/list/list.component').then(m => m.ListComponent)
+      },
+      {
+        path: 'usuarios',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () => import('./features/usuarios/usuarios.component').then(m => m.UsuariosComponent)
+      },
+      {
+        path: 'reportes',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () => import('./features/reportes/reportes.component').then(m => m.ReportesComponent)
+      },
+      {
+        path: 'bitacora',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () => import('./features/bitacora/bitacora.component').then(m => m.BitacoraComponent)
+      },
+      {
+        path: 'configuracion-alertas',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () => import('./features/configuracion-alertas/configuracion-alertas.component').then(m => m.ConfiguracionAlertasComponent)
+      },
+      {
+        path: 'historial',
+        loadComponent: () => import('./features/historial/main/main.component').then(m => m.MainComponent)
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  {
+    path: '**',
+    redirectTo: 'dashboard'
+  }
+];

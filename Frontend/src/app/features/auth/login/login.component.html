@@ -1,0 +1,49 @@
+<main class="login-container">
+  <aside class="brand-panel" aria-label="Sistema de monitoreo climático">
+    <div class="brand-lockup"><span class="brand-mark">W</span><span>WEATHERRISK</span></div>
+    <div class="brand-copy"><p class="eyebrow">PLATAFORMA DE VIGILANCIA</p><h1>Monitoreo y alerta temprana</h1><p>Acceso seguro para la operación y consulta de riesgos climáticos.</p></div>
+    <div class="brand-bottom"><span class="signal-dot"></span><span>Centro de monitoreo</span><span class="brand-version">SISTEMA DE GESTIÓN</span></div>
+  </aside>
+  <section class="login-panel" aria-labelledby="login-title">
+    <div class="login-content">
+      <p class="eyebrow">ACCESO AL SISTEMA</p>
+      <h2 id="login-title">Iniciar sesión</h2>
+      <p class="login-lead">Ingresa con las credenciales asignadas a tu cuenta.</p>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Usuario</mat-label>
+          <input matInput formControlName="username" autocomplete="username">
+          <mat-icon matPrefix>person</mat-icon>
+          <mat-error *ngIf="loginForm.get('username')?.hasError('required')">
+            El usuario es requerido
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Contraseña</mat-label>
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="current-password">
+          <mat-icon matPrefix>lock</mat-icon>
+          <button mat-icon-button matSuffix type="button" (click)="togglePasswordVisibility()">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+            La contraseña es requerida
+          </mat-error>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" class="full-width" [disabled]="loginForm.invalid || loading">
+          <mat-icon *ngIf="!loading">login</mat-icon>
+          <mat-spinner diameter="24" *ngIf="loading"></mat-spinner>
+          <span *ngIf="!loading">Ingresar</span>
+        </button>
+
+        <div *ngIf="error" class="error-message">
+          <mat-icon>error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+
+      </form>
+    </div>
+    <footer class="login-footer">Sistema de Monitoreo y Alerta Temprana <span>·</span> Fase 2</footer>
+  </section>
+</main>
