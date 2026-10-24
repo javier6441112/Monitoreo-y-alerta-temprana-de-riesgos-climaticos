@@ -1,5 +1,0 @@
-# Use only when initializing empty target databases for an import.
-services:
-  auth:
-    environment:
-      ADMIN_PASSWORD: ""

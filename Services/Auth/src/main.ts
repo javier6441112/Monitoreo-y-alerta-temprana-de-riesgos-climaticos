@@ -87,10 +87,10 @@ class Api {
     if (!user?.activo || !verify(password, user.password_hash)) throw new UnauthorizedException('Credenciales inválidas');
     const granted = (await pool.query('SELECT permission FROM role_permissions WHERE role=$1', [user.rol])).rows.map(r=>r.permission);
     const token = jwt.sign({ name:user.username, role:user.rol, permissions:granted, version:user.token_version }, secret,
-      { algorithm:'HS256', issuer, audience, subject:String(user.id), jwtid:randomUUID(), expiresIn:8*60*60 });
+      { algorithm:'HS256', issuer, audience, subject:String(user.id), jwtid:randomUUID(), expiresIn:1*60*60 });
     await pool.query('UPDATE users SET ultimo_acceso=now() WHERE id=$1', [user.id]);
     await audit(String(user.id), 'LOGIN');
-    return { token, tokenType:'Bearer', expiresAt:new Date(Date.now()+8*3600000).toISOString(), user:safeUser(user) };
+    return { token, tokenType:'Bearer', expiresAt:new Date(Date.now()+60 * 60 * 1000).toISOString(), user:safeUser(user) };
   }
   @Get('/api/auth/me') async me(@Req() request: AuthRequest) {
     return safeUser((await pool.query('SELECT * FROM users WHERE id=$1', [request.user.sub])).rows[0]);
