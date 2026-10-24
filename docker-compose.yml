@@ -13,6 +13,23 @@ x-service-env: &service-env
   AUDIT_URL: http://audit:8080
 
 services:
+  seed-demo:
+    image: node:24-bookworm-slim
+    profiles: [demo]
+    working_dir: /seed
+    command: ["node", "seed-demo.mjs"]
+    volumes:
+      - ./scripts/seed-demo.mjs:/seed/seed-demo.mjs:ro
+    environment:
+      API_URL: http://gateway:8080
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SEED_USERNAME: ${SEED_USERNAME:-${ADMIN_USERNAME:-admin}}
+      SEED_PASSWORD: ${SEED_PASSWORD:-${ADMIN_PASSWORD:-}}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+    networks: [edge]
+    depends_on:
+      gateway: {condition: service_healthy}
   auth-postgres:
     image: postgres:17-bookworm
     restart: unless-stopped

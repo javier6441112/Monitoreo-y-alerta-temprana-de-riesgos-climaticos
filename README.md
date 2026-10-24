@@ -23,6 +23,8 @@ Los usuarios importados conservan sus contraseñas anteriores. ADMIN_PASSWORD so
 
 ## Documentación
 
+- [Semilla de datos de demostración](docs/fase-3/SEMILLA_DEMO.md): `docker compose --profile demo run --rm seed-demo` después de levantar los servicios.
+
 - [Microservicios: contratos, operación, seguridad, pruebas y migración](docs/fase-3/MICROSERVICIOS.md).
 - [Lista de tareas de fase 3](TAREAS_FASE_3.md).
 - [Diseño inicial de la reingeniería](docs/fase-3/ARQUITECTURA.md).
