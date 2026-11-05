@@ -10,7 +10,7 @@ export type { DashboardData } from '../../models/api-contract.models';
 @Injectable({
   providedIn: 'root'
 })
-export class zDashboardService {
+export class DashboardService {
   constructor(private http: HttpClient) {}
 
   getDashboard(filters: FiltrosApi = {}): Observable<DashboardData> {
