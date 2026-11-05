@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Subscription } from 'rxjs';
 import { Alerta, Comunidad, EstadoAlerta, FiltrosApi } from '../../../core/models/api-contract.models';
 import { AuthService } from '../../../core/services/auth/auth.service';
@@ -11,7 +12,7 @@ import { Signalr } from '../../../core/services/signalr/signalr';
 @Component({
   selector: 'app-alertas-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe, MatPaginatorModule],
   template: `
     <section class="page-shell">
       <header class="page-head"><div><p class="eyebrow">CENTRO DE OPERACIONES</p><h1>Alertas</h1><p>Eventos detectados por las reglas de riesgo configuradas.</p></div><button class="button button-secondary" type="button" (click)="load()">Actualizar</button></header>
@@ -20,7 +21,7 @@ import { Signalr } from '../../../core/services/signalr/signalr';
       @if (error) { <div class="notice" role="alert">{{ error }}</div> }
       @if (loading) { <p class="state">Cargando alertas…</p> }
       @if (!loading && !error && alerts.length === 0) { <div class="empty"><h2>No hay alertas para estos filtros</h2><p>Las alertas aparecerán cuando la API registre eventos de riesgo.</p></div> }
-      @if (!loading && alerts.length) { <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Riesgo</th><th>Comunidad</th><th>Sensor</th><th>Lectura / umbral</th><th>Estado</th><th>Detalle</th>@if (canOperate) { <th>Acción</th> }</tr></thead><tbody>@for (alert of alerts; track alert.id) {<tr><td>{{ alert.fechaHora | date:'medium' }}</td><td><span class="level" [class]="'level-' + alert.nivel.toLowerCase()">{{ alert.nivel }}</span><small>{{ alert.fenomeno }}</small></td><td>{{ alert.comunidadNombre || (alert.comunidadId ? 'Comunidad ' + alert.comunidadId : '—') }}</td><td>{{ alert.sensorNombre || 'Sensor ' + alert.sensorId }}</td><td><strong>{{ alert.valorDetectado }}</strong><small>Min {{ alert.valorMinimo ?? '—' }} · Max {{ alert.valorMaximo ?? '—' }}</small></td><td><span class="status" [class]="'status-' + status(alert).toLowerCase()">{{ statusLabel(status(alert)) }}</span><small>{{ alert.atendidaPorNombre || alert.cerradaPorNombre || '' }}</small></td><td class="message"><details><summary>{{ alert.mensaje }}</summary><dl><dt>Regla</dt><dd>{{ alert.configuracionAlertaId || '—' }}</dd><dt>Responsable</dt><dd>{{ alert.atendidaPorNombre || alert.cerradaPorNombre || 'Sin asignar' }}</dd><dt>Fecha de atención</dt><dd>{{ alert.fechaAtencion ? (alert.fechaAtencion | date:'short') : '—' }}</dd></dl></details></td>@if (canOperate) { <td class="actions">@if (status(alert) === 'ACTIVA') { <button class="button button-quiet" type="button" (click)="setStatus(alert, 'ATENDIDA')">Atender</button> }@if (status(alert) === 'ATENDIDA') { <button class="button button-quiet" type="button" (click)="setStatus(alert, 'CERRADA')">Cerrar</button> }</td> }</tr>}</tbody></table></div> }
+      @if (!loading && alerts.length) { <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Riesgo</th><th>Comunidad</th><th>Sensor</th><th>Lectura / umbral</th><th>Estado</th><th>Detalle</th>@if (canOperate) { <th>Acción</th> }</tr></thead><tbody>@for (alert of paginatedAlerts; track alert.id) {<tr><td>{{ alert.fechaHora | date:'medium' }}</td><td><span class="level" [class]="'level-' + alert.nivel.toLowerCase()">{{ alert.nivel }}</span><small>{{ alert.fenomeno }}</small></td><td>{{ alert.comunidadNombre || (alert.comunidadId ? 'Comunidad ' + alert.comunidadId : '—') }}</td><td>{{ alert.sensorNombre || 'Sensor ' + alert.sensorId }}</td><td><strong>{{ alert.valorDetectado }}</strong><small>Min {{ alert.valorMinimo ?? '—' }} · Max {{ alert.valorMaximo ?? '—' }}</small></td><td><span class="status" [class]="'status-' + status(alert).toLowerCase()">{{ statusLabel(status(alert)) }}</span><small>{{ alert.atendidaPorNombre || alert.cerradaPorNombre || '' }}</small></td><td class="message"><details><summary>{{ alert.mensaje }}</summary><dl><dt>Regla</dt><dd>{{ alert.configuracionAlertaId || '—' }}</dd><dt>Responsable</dt><dd>{{ alert.atendidaPorNombre || alert.cerradaPorNombre || 'Sin asignar' }}</dd><dt>Fecha de atención</dt><dd>{{ alert.fechaAtencion ? (alert.fechaAtencion | date:'short') : '—' }}</dd></dl></details></td>@if (canOperate) { <td class="actions">@if (status(alert) === 'ACTIVA') { <button class="button button-quiet" type="button" (click)="setStatus(alert, 'ATENDIDA')">Atender</button> }@if (status(alert) === 'ATENDIDA') { <button class="button button-quiet" type="button" (click)="setStatus(alert, 'CERRADA')">Cerrar</button> }</td> }</tr>}</tbody></table></div><mat-paginator [length]="alerts.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[10, 25, 50]" [showFirstLastButtons]="true" (page)="changePage($event)" aria-label="Paginación de alertas"></mat-paginator> }
     </section>
   `,
   styles: [`
@@ -29,12 +30,18 @@ import { Signalr } from '../../../core/services/signalr/signalr';
 })
 export class ListComponent implements OnInit, OnDestroy {
   alerts: Alerta[] = [];
+  pageIndex = 0;
+  pageSize = 10;
   communities: Comunidad[] = [];
   loading = false;
   error = '';
   filters: FiltrosApi = { desde: '', hasta: '', comunidadId: '', sensorId: '', nivel: '', estado: '' };
   private readonly subscription = new Subscription();
   get canOperate(): boolean { return this.auth.hasRole(['ADMIN', 'OPERADOR']); }
+  get paginatedAlerts(): Alerta[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.alerts.slice(start, start + this.pageSize);
+  }
 
   constructor(private readonly service: AlertaService, private readonly communityService: ComunidadService, private readonly auth: AuthService, private readonly signalr: Signalr) {}
   ngOnInit(): void {
@@ -48,7 +55,7 @@ export class ListComponent implements OnInit, OnDestroy {
     this.loading = true; this.error = '';
     const filters = Object.fromEntries(Object.entries(this.filters).filter(([, value]) => value !== '')) as FiltrosApi;
     this.service.getAlertas(filters).subscribe({
-      next: alerts => { this.alerts = alerts.map(alert => ({ ...alert, estado: alert.estado ?? (alert.activa ? 'ACTIVA' : 'CERRADA') })); this.loading = false; },
+      next: alerts => { this.alerts = alerts.map(alert => ({ ...alert, estado: alert.estado ?? (alert.activa ? 'ACTIVA' : 'CERRADA') })); this.pageIndex = 0; this.loading = false; },
       error: () => { this.alerts = []; this.loading = false; this.error = 'No fue posible cargar alertas. Verifica la conexión con la API.'; }
     });
   }
@@ -57,6 +64,7 @@ export class ListComponent implements OnInit, OnDestroy {
   status(alert: Alerta): EstadoAlerta { return alert.estado ?? (alert.activa ? 'ACTIVA' : 'CERRADA'); }
   statusLabel(status: EstadoAlerta): string { return ({ ACTIVA: 'Activa', ATENDIDA: 'Atendida', CERRADA: 'Cerrada' })[status]; }
   count(status: EstadoAlerta): number { return this.alerts.filter(alert => this.status(alert) === status).length; }
+  changePage(event: PageEvent): void { this.pageIndex = event.pageIndex; this.pageSize = event.pageSize; }
 
   setStatus(alert: Alerta, estado: EstadoAlerta): void {
     this.service.setStatus(alert.id, estado).subscribe({

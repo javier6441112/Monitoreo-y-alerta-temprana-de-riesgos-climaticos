@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { EventoAuditoria } from '../../core/models/api-contract.models';
 import { BitacoraService } from '../../core/services/bitacora/bitacora.service';
 
 @Component({
   selector: 'app-bitacora',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule],
   template: `
     <section class="page-shell">
       <header class="page-head"><div><p class="eyebrow">TRAZABILIDAD</p><h1>Bitácora de auditoría</h1><p>Actividad administrativa registrada por el sistema.</p></div><button class="button button-secondary" type="button" (click)="load()">Actualizar</button></header>
@@ -15,7 +16,7 @@ import { BitacoraService } from '../../core/services/bitacora/bitacora.service';
       @if (error) { <div class="notice" role="alert">{{ error }}</div> }
       @if (loading) { <p class="state">Cargando actividad…</p> }
       @if (!loading && !error && events.length === 0) { <div class="empty"><h2>Sin actividad para estos filtros</h2><p>La bitácora aparecerá aquí cuando la API entregue registros.</p></div> }
-      @if (!loading && events.length) { <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Descripción</th></tr></thead><tbody>@for (event of events; track event.id) {<tr><td>{{ event.fechaHora | date:'medium' }}</td><td>{{ event.usuarioNombre || 'Sistema' }}</td><td><span class="action-tag">{{ event.accion }}</span></td><td>{{ event.entidad || '—' }}{{ event.entidadId ? ' #' + event.entidadId : '' }}</td><td>{{ event.descripcion }}</td></tr>}</tbody></table></div> }
+      @if (!loading && events.length) { <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Descripción</th></tr></thead><tbody>@for (event of paginatedEvents; track event.id) {<tr><td>{{ event.fechaHora | date:'medium' }}</td><td>{{ event.usuarioNombre || 'Sistema' }}</td><td><span class="action-tag">{{ event.accion }}</span></td><td>{{ event.entidad || '—' }}{{ event.entidadId ? ' #' + event.entidadId : '' }}</td><td>{{ event.descripcion }}</td></tr>}</tbody></table></div><mat-paginator [length]="events.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[10, 25, 50]" [showFirstLastButtons]="true" (page)="changePage($event)" aria-label="Paginación de bitácora"></mat-paginator> }
     </section>
   `,
   styles: [`
@@ -24,18 +25,25 @@ import { BitacoraService } from '../../core/services/bitacora/bitacora.service';
 })
 export class BitacoraComponent implements OnInit {
   events: EventoAuditoria[] = [];
+  pageIndex = 0;
+  pageSize = 10;
   loading = false;
   error = '';
   filters = { desde: '', hasta: '', usuarioId: '', accion: '', entidad: '' };
+  get paginatedEvents(): EventoAuditoria[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.events.slice(start, start + this.pageSize);
+  }
 
   constructor(private readonly service: BitacoraService) {}
   ngOnInit(): void { this.load(); }
   load(): void {
     this.loading = true; this.error = '';
     this.service.getAll(this.filters).subscribe({
-      next: data => { this.events = data; this.loading = false; },
+      next: data => { this.events = data; this.pageIndex = 0; this.loading = false; },
       error: () => { this.events = []; this.loading = false; this.error = 'No fue posible cargar la bitácora. Se requiere acceso de administrador y una API disponible.'; }
     });
   }
   clear(): void { this.filters = { desde: '', hasta: '', usuarioId: '', accion: '', entidad: '' }; this.load(); }
+  changePage(event: PageEvent): void { this.pageIndex = event.pageIndex; this.pageSize = event.pageSize; }
 }

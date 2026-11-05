@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { DashboardService, DashboardData } from '../../core/services/dashboard/dashboard.service';
 import { ComunidadService } from '../../core/services/comunidad/comunidad.service';
 import { Comunidad, NivelAlerta, SerieLectura } from '../../core/models/api-contract.models';
@@ -10,7 +11,7 @@ import { Signalr } from '../../core/services/signalr/signalr';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <section class="dashboard-page">
       <header class="page-head"><div><p class="eyebrow">VIGILANCIA EN TIEMPO REAL</p><h1>Estado del territorio</h1><p>Lecturas, sensores y alertas climáticas.</p></div><label class="community-filter">Comunidad<select [(ngModel)]="comunidadId" (ngModelChange)="loadDashboard()"><option value="">Todas las comunidades</option>@for (item of communities; track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label></header>

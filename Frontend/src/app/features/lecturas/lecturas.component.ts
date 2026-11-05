@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -28,6 +29,7 @@ import { ConfiguracionAlertaService } from '../../core/services/configuracion-al
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatSelectModule,
     MatSnackBarModule,
     MatTableModule
@@ -88,6 +90,10 @@ import { ConfiguracionAlertaService } from '../../core/services/configuracion-al
       <mat-card class="history-card">
         <mat-card-header>
           <mat-card-title>Lecturas registradas</mat-card-title>
+          <button mat-stroked-button type="button" (click)="refreshReadings()" [disabled]="loadingReadings" aria-label="Actualizar lecturas">
+            <mat-icon>refresh</mat-icon>
+            {{ loadingReadings ? 'Actualizando...' : 'Actualizar' }}
+          </button>
         </mat-card-header>
         <mat-card-content>
           <div class="history-filters" [formGroup]="readingForm">
@@ -109,7 +115,7 @@ import { ConfiguracionAlertaService } from '../../core/services/configuracion-al
             <label class="date-field">Hasta<input type="date" formControlName="hasta" (change)="loadReadings()"></label>
           </div>
           <div class="table-wrapper">
-            <table mat-table [dataSource]="lecturas">
+            <table mat-table [dataSource]="pagedLecturas">
               <ng-container matColumnDef="id">
                 <th mat-header-cell *matHeaderCellDef>ID</th>
                 <td mat-cell *matCellDef="let lectura">{{ lectura.id }}</td>
@@ -139,6 +145,16 @@ import { ConfiguracionAlertaService } from '../../core/services/configuracion-al
             </table>
             <p class="empty" *ngIf="!lecturas.length">No hay lecturas registradas para este sensor.</p>
           </div>
+          <mat-paginator
+            *ngIf="lecturas.length"
+            [length]="lecturas.length"
+            [pageIndex]="pageIndex"
+            [pageSize]="pageSize"
+            [pageSizeOptions]="[10, 25, 50]"
+            [showFirstLastButtons]="true"
+            (page)="changePage($event)"
+            aria-label="Paginación de lecturas">
+          </mat-paginator>
         </mat-card-content>
       </mat-card>
     </div>
@@ -150,6 +166,7 @@ import { ConfiguracionAlertaService } from '../../core/services/configuracion-al
     .page-header p { margin: 0; color: var(--muted); }
     mat-card { margin-bottom: 20px; }
     mat-card-title { color: var(--ink); }
+    mat-card-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .reading-form { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 16px; }
     .reading-form mat-form-field { flex: 1 1 260px; }
     .reading-form button { min-height: 56px; }
@@ -169,8 +186,11 @@ export class LecturasComponent implements OnInit {
   communities: Comunidad[] = [];
   activeRuleTypes = new Set<string>();
   lecturas: Lectura[] = [];
+  pageIndex = 0;
+  pageSize = 10;
   columns = ['id', 'sensorId', 'comunidadId', 'valor', 'fechaHora', 'estadoSensor'];
   saving = false;
+  loadingReadings = false;
   selectedUnit = '';
   get filteredSensors(): Sensor[] {
     const communityId = this.readingForm.controls.comunidadId.value;
@@ -183,6 +203,10 @@ export class LecturasComponent implements OnInit {
       : [];
   }
   get canOperate(): boolean { return this.authService.hasRole(['ADMIN', 'OPERADOR']); }
+  get pagedLecturas(): Lectura[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.lecturas.slice(start, start + this.pageSize);
+  }
 
   readingForm;
 
@@ -255,10 +279,25 @@ export class LecturasComponent implements OnInit {
   loadReadings(): void {
     const { comunidadId, filtroSensorId, desde, hasta } = this.readingForm.getRawValue();
     this.updateUnit();
+    this.loadingReadings = true;
+    this.pageIndex = 0;
     this.lecturaService.getLecturas(filtroSensorId ?? undefined, { comunidadId: comunidadId ?? undefined, desde: desde || undefined, hasta: hasta || undefined }).subscribe({
-      next: lecturas => this.lecturas = lecturas,
-      error: () => this.snackBar.open('No se pudieron cargar las lecturas', 'Cerrar', { duration: 3000 })
+      next: lecturas => {
+        this.lecturas = lecturas;
+        this.loadingReadings = false;
+      },
+      error: () => {
+        this.loadingReadings = false;
+        this.snackBar.open('No se pudieron cargar las lecturas', 'Cerrar', { duration: 3000 });
+      }
     });
+  }
+
+  refreshReadings(): void { this.loadReadings(); }
+
+  changePage(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
   }
 
   submit(): void {

@@ -59,7 +59,11 @@ export class ConfiguracionAlertasComponent implements OnInit {
   clear(): void { this.filters = { tipoSensor: '', activo: '' }; this.load(); }
   newRule(): void { this.editingId = null; this.form.reset({ nombre: '', tipoSensor: 'TEMPERATURA', valorMinimo: null, valorMaximo: null, nivel: 'AMARILLO', fenomeno: '', mensaje: '', activo: true }); this.formError = ''; this.editing = true; }
   edit(rule: ReglaAlerta): void { this.editingId = rule.id; this.form.reset({ ...rule, valorMinimo: rule.valorMinimo, valorMaximo: rule.valorMaximo }); this.formError = ''; this.editing = true; }
-  cancel(): void { this.editing = false; }
+  cancel(): void {
+    const target = window.event?.target;
+    if (target instanceof HTMLElement && target.classList.contains('backdrop')) return;
+    this.editing = false;
+  }
 
   save(): void {
     if (this.form.invalid || this.limitsInvalid || this.saving) return;

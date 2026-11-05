@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Comunidad, EstadisticasHistorial, EventoHistorial, FiltrosApi, NivelAlerta } from '../../../core/models/api-contract.models';
 import { ComunidadService } from '../../../core/services/comunidad/comunidad.service';
 import { HistorialService } from '../../../core/services/historial/historial.service';
@@ -8,7 +9,7 @@ import { HistorialService } from '../../../core/services/historial/historial.ser
 @Component({
   selector: 'app-historial-main',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule],
+  imports: [CommonModule, DatePipe, FormsModule, MatPaginatorModule],
   template: `
     <section class="page-shell">
       <header class="page-head"><div><p class="eyebrow">TRAZABILIDAD DE RIESGO</p><h1>Historial de eventos</h1><p>Consulta eventos climáticos por periodo, comunidad y severidad.</p></div><button class="button button-secondary" type="button" (click)="load()">Actualizar</button></header>
@@ -17,7 +18,7 @@ import { HistorialService } from '../../../core/services/historial/historial.ser
       @if (error) { <div class="notice" role="alert">{{ error }}</div> }
       @if (loading) { <p class="state">Cargando historial…</p> }
       @if (!loading && !error && events.length === 0) { <div class="empty"><h2>No hay eventos para estos filtros</h2><p>Los eventos de riesgo se mostrarán cuando existan registros.</p></div> }
-      @if (!loading && events.length) { <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Fenómeno</th><th>Nivel</th><th>Comunidad</th><th>Sensor</th><th>Valor</th><th>Detalle</th></tr></thead><tbody>@for (event of events; track event.id) {<tr><td>{{ event.fechaHora | date:'medium' }}</td><td><strong>{{ event.fenomeno }}</strong></td><td><span class="level" [class]="'level-' + event.nivel.toLowerCase()">{{ event.nivel }}</span></td><td>{{ event.comunidadNombre || communityName(event.comunidadId) }}</td><td>{{ event.sensorNombre || 'Sensor ' + event.sensorId }}</td><td>{{ event.valor ?? '—' }}</td><td class="message">{{ event.mensaje }}</td></tr>}</tbody></table></div> }
+      @if (!loading && events.length) { <div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha y hora</th><th>Fenómeno</th><th>Nivel</th><th>Comunidad</th><th>Sensor</th><th>Valor</th><th>Detalle</th></tr></thead><tbody>@for (event of paginatedEvents; track event.id) {<tr><td>{{ event.fechaHora | date:'medium' }}</td><td><strong>{{ event.fenomeno }}</strong></td><td><span class="level" [class]="'level-' + event.nivel.toLowerCase()">{{ event.nivel }}</span></td><td>{{ event.comunidadNombre || communityName(event.comunidadId) }}</td><td>{{ event.sensorNombre || 'Sensor ' + event.sensorId }}</td><td>{{ event.valor ?? '—' }}</td><td class="message">{{ event.mensaje }}</td></tr>}</tbody></table></div><mat-paginator [length]="events.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[10, 25, 50]" [showFirstLastButtons]="true" (page)="changePage($event)" aria-label="Paginación del historial"></mat-paginator> }
     </section>
   `,
   styles: [`
@@ -26,6 +27,8 @@ import { HistorialService } from '../../../core/services/historial/historial.ser
 })
 export class MainComponent implements OnInit {
   events: EventoHistorial[] = [];
+  pageIndex = 0;
+  pageSize = 10;
   communities: Comunidad[] = [];
   stats: EstadisticasHistorial | null = null;
   loading = false;
@@ -33,6 +36,10 @@ export class MainComponent implements OnInit {
   filters: FiltrosApi = { desde: '', hasta: '', comunidadId: '', sensorId: '', fenomeno: '', nivel: '' };
   levels: { key: NivelAlerta; label: string }[] = [{ key: 'ROJO', label: 'Emergencia' }, { key: 'NARANJA', label: 'Alerta' }, { key: 'AMARILLO', label: 'Precaución' }, { key: 'VERDE', label: 'Normal' }];
   phenomena = ['INUNDACION', 'SEQUIA', 'TORMENTA', 'HELADA', 'INCENDIO_FORESTAL'];
+  get paginatedEvents(): EventoHistorial[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.events.slice(start, start + this.pageSize);
+  }
 
   constructor(private readonly historyService: HistorialService, private readonly communityService: ComunidadService) {}
   ngOnInit(): void {
@@ -42,9 +49,10 @@ export class MainComponent implements OnInit {
   load(): void {
     this.loading = true; this.error = '';
     const filters = Object.fromEntries(Object.entries(this.filters).filter(([, value]) => value !== '')) as FiltrosApi;
-    this.historyService.getHistorial(filters).subscribe({ next: data => { this.events = data; this.loading = false; }, error: () => { this.events = []; this.loading = false; this.error = 'No fue posible cargar el historial. Verifica que la API esté disponible.'; } });
+    this.historyService.getHistorial(filters).subscribe({ next: data => { this.events = data; this.pageIndex = 0; this.loading = false; }, error: () => { this.events = []; this.loading = false; this.error = 'No fue posible cargar el historial. Verifica que la API esté disponible.'; } });
     this.historyService.getStatistics(filters).subscribe({ next: data => this.stats = data, error: () => this.stats = null });
   }
   clear(): void { this.filters = { desde: '', hasta: '', comunidadId: '', sensorId: '', fenomeno: '', nivel: '' }; this.load(); }
   communityName(id: number): string { return this.communities.find(item => item.id === id)?.nombre ?? (id ? `Comunidad ${id}` : '—'); }
+  changePage(event: PageEvent): void { this.pageIndex = event.pageIndex; this.pageSize = event.pageSize; }
 }
