@@ -74,7 +74,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: data => { this.dashboard = data; this.loading = false; },
       error: () => { this.dashboard = null; this.loading = false; this.error = 'No fue posible cargar el dashboard. Verifica que la API esté disponible.'; }
     });
-    this.dashboardService.getSeries(filters).subscribe({ next: data => this.series = data, error: () => this.series = [] });
+    this.dashboardService.getSeries(filters).subscribe({
+      next: data => {
+        this.series = [...data]
+          .sort((left, right) => new Date(left.fechaHora).getTime() - new Date(right.fechaHora).getTime())
+          .slice(-12);
+      },
+      error: () => this.series = []
+    });
   }
 
   levelWidth(level: NivelAlerta): number {
