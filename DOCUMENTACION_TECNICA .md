@@ -1,683 +1,283 @@
-> Documento historico de una etapa anterior. El codigo monolitico fue retirado. Consultar el [README](README.md) para la arquitectura activa.
+# Documentación técnica del proyecto
 
-# Documentación Técnica del Proyecto
+Sistema de Monitoreo y Alerta Temprana para Riesgos Climáticos.
 
-> Este documento describe principalmente la versión monolítica. La arquitectura activa y el traslado de datos de fase 3 se documentan en [Microservicios](docs/fase-3/MICROSERVICIOS.md).
+Actualizada el 23 de octubre de 2026 a partir del código del repositorio. Describe la arquitectura activa; el monolito permanece en el historial de Git. Las instrucciones de operación no certifican disponibilidad de la VPS.
 
-**Link del proyecto**
-[Monitoreo y alerta temprana de riesgos climaticos](https://github.com/javier6441112/Monitoreo-y-alerta-temprana-de-riesgos-climaticos.git)
-##Integrantes 
-```
-Tedi Castellanos 7690-23-3016
-Javier Sandoval  7690-23-5643
+[Repositorio del proyecto](https://github.com/javier6441112/Monitoreo-y-alerta-temprana-de-riesgos-climaticos)
 
-```
+| Integrante | Carné |
+|---|---|
+| Tedi Castellanos | 7690-23-3016 |
+| Javier Sandoval | 7690-23-5643 |
 
-## 1. Información general
+## 1. Propósito y alcance
 
-### 1.1 Nombre del proyecto
-Sistema de Monitoreo y Alerta Temprana para Riesgos Climáticos
+Administrar comunidades, sensores y lecturas ambientales; evaluar umbrales configurables; mostrar alertas, dashboard e historial; registrar auditoría y producir reportes PDF. Las variables incluyen temperatura, humedad, viento, lluvia y nivel de río; la semilla también incorpora humo.
 
-### 1.2 Tipo de solución
-Aplicación web full-stack orientada a la supervisión climática, gestión de sensores, alertas y visualización de riesgo mediante un panel de control.
+Las alertas representan coincidencias con reglas, no predicciones meteorológicas certificadas. Los datos de demostración y sus umbrales requieren validación antes de cualquier uso real.
 
-### 1.3 Propósito
-El sistema permite:
-- monitorear variables ambientales críticas como temperatura, humedad, viento, lluvia y nivel de río;
-- registrar y administrar sensores;
-- detectar eventos de alto riesgo mediante reglas de alerta;
-- consultar el historial de eventos climáticos;
-- mantener una auditoría de actividades del sistema;
-- centralizar la autenticación y la seguridad del acceso mediante JWT.
-
-### 1.4 Alcance funcional
-La solución contempla dos capas principales:
-- Frontend en Angular para experiencia de usuario y consumo de servicios REST/SignalR.
-- Backend en ASP.NET Core para lógica de negocio, seguridad, persistencia y servicios de monitoreo.
-
----
-
-## 2. Objetivos del sistema
-
-### 2.1 Objetivo principal
-Proporcionar una plataforma para la vigilancia temprana de condiciones climáticas que puedan implicar riesgo para infraestructuras, comunidades o recursos naturales.
-
-### 2.2 Objetivos secundarios
-- Centralizar la gestión de sensores y lectura actualizada.
-- Automatizar la generación de alertas ante condiciones límite.
-- Facilitar la toma de decisiones con indicadores en dashboard.
-- Permitir auditoría y trazabilidad de eventos.
-- Otorgar autenticación segura con separación por roles.
-
----
-
-## 3. Arquitectura general
-
-El proyecto se estructura en dos componentes principales y una capa de persistencia:
-
-- Frontend: Angular 20, componentes standalone, Material Design.
-- Backend: ASP.NET Core Web API en .NET 10.
-- Base de datos: Microsoft SQL Server.
-- Comunicación en tiempo real: SignalR.
-- Seguridad: JWT + autenticación Bearer.
-
-### 3.1 Diagrama conceptual
+## 2. Arquitectura activa
 
 ```mermaid
 flowchart LR
-    U[Usuario] --> F[Frontend Angular]
-    F --> API[Backend ASP.NET Core API]
-    API --> DB[(SQL Server)]
-    API --> HUB[SignalR Hub]
-    HUB --> F
-    API --> JWT[JWT Authentication]
+    U[Angular] --> N[Nginx del frontend]
+    N --> G[Gateway YARP]
+    G --> A[Auth: NestJS]
+    G --> C[Community: .NET]
+    G --> S[Sensor: .NET y SignalR]
+    G --> L[Alert: Spring Boot]
+    G --> R[Report: FastAPI]
+    G --> B[Audit: FastAPI]
+    A --> PA[(PostgreSQL Auth)]
+    C --> PC[(PostgreSQL Community)]
+    L --> PL[(PostgreSQL Alert)]
+    S --> SQL[(SQL Server)]
+    R --> MR[(MongoDB Report y GridFS)]
+    B --> MB[(MongoDB Audit)]
+    S -->|evaluación desde outbox| L
+    R -->|HTTP| C
+    R -->|HTTP| S
+    R -->|HTTP| L
 ```
 
-### 3.2 Principios de diseño
-- Separación de responsabilidades por capas.
-- Servicios inyectados con Dependency Injection.
-- Modelos y DTOs explícitos para transferencia de datos.
-- Repositorio centralizado para acceso a datos.
-- Autenticación basada en tokens con roles.
-- Arquitectura orientada a API REST con actualización de estado en tiempo real.
+El diagrama resume flujos principales. También hay introspección hacia Auth, consultas de enriquecimiento y envío de eventos hacia Audit. En la VPS puede existir un Nginx del host que termina HTTPS y reenvía al frontend; no está incluido en Compose por defecto.
 
----
+| Componente | Tecnología declarada | Responsabilidad | Código |
+|---|---|---|---|
+| Frontend | Angular 20, TypeScript, Material, RxJS | Interfaz y cliente SignalR | `Frontend/` |
+| Gateway | .NET 10, YARP | Enrutamiento, acceso inicial, CORS, límites y dashboard | `Gateway/` |
+| Auth | Node 24, NestJS, TypeScript | Usuarios, contraseñas, roles, permisos y sesiones | `Services/Auth/` |
+| Community | .NET 10, Npgsql | Comunidades y geografía | `Services/Community/` |
+| Sensor | .NET 10, SQL Server, SignalR | Sensores, lecturas, simulación y outbox | `Services/Sensor/` |
+| Alert | Java 21, Spring Boot 3.5.11 | Reglas, alertas e historial | `Services/Alert/` |
+| Report | Python 3.12, FastAPI, Jinja2, WeasyPrint | Generación y almacenamiento de PDF | `Services/Report/` |
+| Audit | Python, FastAPI, PyMongo | Recepción y consulta de auditoría | `Services/Audit/` |
 
-## 4. Stack tecnológico
+`Services/Platform/Platform.cs` comparte infraestructura .NET; `Services/PythonCommon/` comparte seguridad, HTTP y errores Python. No se comparte un modelo de entidades entre todos los dominios.
 
-### 4.1 Frontend
-- Angular 20
-- TypeScript
-- Angular Material
-- RxJS
-- @auth0/angular-jwt
-- @microsoft/signalr
-- Angular Router
-
-### 4.2 Backend
-- ASP.NET Core Web API
-- C#
-- .NET 10
-- Entity Framework Core
-- SQL Server provider para EF Core
-- JWT Bearer Authentication
-- Swagger/OpenAPI
-- SignalR
-
-### 4.3 Infraestructura y despliegue
-- Docker
-- Docker Compose
-- Nginx (para frontend HTTP)
-- Contenedores separados para base de datos, API y frontend
-
----
-
-## 5. Estructura del repositorio
+## 3. Estructura y refactorización
 
 ```text
-Monitoreo-y-alerta-temprana-de-riesgos-climaticos/
-├── Backend/
-│   ├── Controllers/
-│   ├── Data/
-│   ├── DTOs/
-│   ├── Hubs/
-│   ├── Models/
-│   ├── Repositories/
-│   ├── Services/
-│   ├── Program.cs
-│   ├── appsettings.json
-│   ├── docker-compose.yml
-│   ├── Dockerfile
-│   └── WeatherRisk.Api.csproj
-├── Frontend/
-│   ├── src/
-│   ├── angular.json
-│   ├── package.json
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   └── proxy.conf.json
-├── BaseDeDatos/
-├── Backend.Tests/
-├── docker-compose.yml
-├── README.md
-├── DOCUMENTACION_TECNICA.md
-└── .gitignore
+Frontend/                 Angular y Nginx del contenedor
+Gateway/                  Proxy YARP y dashboard
+Services/                 Seis servicios e infraestructura compartida
+infra/mongo/              Inicialización de usuarios MongoDB
+infra/nginx/              Ejemplo HTTPS para la VPS
+scripts/                  Entorno, semilla y verificadores
+Tools/Migration/          Importación administrativa histórica
+docs/fase-3/              Operación, semilla y defensa
+docker-compose.yml        Despliegue activo y perfil demo
+.env.example              Plantilla sin secretos reales
 ```
 
----
+Se retiraron `Backend/`, `BaseDeDatos/`, pruebas del monolito y configuraciones antiguas del frontend. Angular arranca desde `Frontend/src/main.ts`, con `app.config.ts` y `app.routes.ts`. Los documentos anteriores de diseño y contratos se conservan como históricos.
 
-## 6. Requisitos del sistema
+## 4. Persistencia
 
-### 6.1 Requisitos mínimos de hardware
-- Procesador: 2 núcleos o superior.
-- Memoria RAM: 4 GB mínimo recomendado.
-- Almacenamiento: 20 GB libre.
+| Propietario | Gestor | Entidades | Inicialización |
+|---|---|---|---|
+| Auth | PostgreSQL 17 | users, revoked_tokens, role_permissions, external_identities, schema_versions | `Services/Auth/src/main.ts` |
+| Community | PostgreSQL 17 | communities | `Services/Community/Program.cs` |
+| Sensor | SQL Server 2022 | sensors, readings, evaluation_outbox, monitor_settings | SensorSchema en `Services/Sensor/Program.cs` |
+| Alert | PostgreSQL 17 | rules, alerts, events, evaluation_receipts | `Services/Alert/src/main/resources/schema.sql` |
+| Report | MongoDB 8 | Metadatos y PDF en GridFS | `Services/Report/main.py` |
+| Audit | MongoDB 8 | Eventos con eventId único | `Services/Audit/main.py` |
 
-### 6.2 Requisitos de software
-- Node.js 22+
-- Angular CLI 20+
-- .NET SDK 10+
-- SQL Server 2022 Developer o equivalente
-- Docker y Docker Compose
+Los tres servicios PostgreSQL tienen instancias separadas, aunque actualmente comparten el valor `POSTGRES_PASSWORD`. Report y Audit comparten instancia MongoDB, con bases y usuarios distintos. Cada servicio consulta datos ajenos mediante APIs. La herramienta administrativa de importación es una excepción fuera del tráfico normal.
 
-### 6.3 Dependencias principales
-- Frontend: Angular Material, RxJS, SignalR client, JWT helper.
-- Backend: EntityFramework Core SQL Server, JWT Bearer, Swagger, SignalR.
+Los volúmenes auth-data, community-data, sensor-data, alert-data y mongo-data conservan datos. `DATA_VOLUME_PREFIX` determina sus nombres reales: cambiarlo puede seleccionar bases nuevas. Recrear contenedores no migra datos. La inicialización del esquema no sustituye migraciones versionadas para futuras modificaciones.
 
----
+## 5. APIs y contratos
 
-## 7. Configuración de entorno
+Las rutas se configuran en `Gateway/Program.cs`; los servicios definen operaciones y validaciones.
 
-### 7.1 Variables de entorno
-El proyecto usa archivos de configuración y variables de entorno para separar ambiente de desarrollo y producción.
+| Ruta | Destino o función |
+|---|---|
+| `POST /api/auth/login` | Login público; token, tokenType, expiresAt y user |
+| `/api/auth/me`, `/api/auth/logout` | Identidad y cierre de sesión |
+| `/api/usuarios`, `/api/roles` | Administración en Auth |
+| `/api/comunidades` | Community; alias `/api/communities` |
+| `/api/sensores`, `/api/lecturas`, `/api/monitoreo` | Sensor; alias `/api/sensors` |
+| `/hubs/monitoreo` | SignalR autenticado |
+| `/api/configuracionalertas`, `/api/alertas`, `/api/historial` | Alert; alias `/api/alerts` |
+| `/api/reports` | Generación, historial, detalle y descarga |
+| `/api/bitacora`, `/api/audit` | Audit; requiere ADMIN |
+| `/api/dashboard`, `/api/dashboard/series` | Composición en Gateway por HTTP |
+| `/health`, `/ready` | Salud y disponibilidad; Gateway comprueba dependencias |
 
-#### Backend
-- `ConnectionStrings__DefaultConnection`
-- `Jwt:Key`
-- `Jwt:Issuer`
-- `ASPNETCORE_ENVIRONMENT`
+Las consultas de dominio generalmente devuelven listas. La paginación usa `page` desde 1 y `pageSize` máximo 200. Reportes devuelve `{items, page, pageSize, total}`. Los filtros dependen del recurso: sensorId, comunidadId, desde, hasta, tipo, nivel y fenomeno. Se usan fechas ISO 8601 y límites de consulta inclusivos.
 
-#### Frontend
-- `environment.ts` para desarrollo
-- `environment.prod.ts` para producción
+Respuestas relevantes: 400 datos inválidos, 401 autenticación inválida, 403 permisos insuficientes, 404 recurso inexistente, 409 conflicto, 413 exceso de filas y 429 límite de solicitudes. Las dependencias pueden producir 502/503. Hay respuestas de problema para errores de aplicación; algunos rechazos de autenticación no incluyen cuerpo.
 
-### 7.2 URLs base
-- API local: `/api`
-- SignalR Hub: `/hubs/monitoreo`
+## 6. Seguridad
 
-### 7.3 Seguridad en configuración
-El backend exige la clave JWT en configuración para iniciar la aplicación. Si no se define, la ejecución falla con una excepción de configuración.
+`Services/Auth/src/password.ts` implementa PBKDF2-SHA256 con salt aleatorio, 100 000 iteraciones y comparación segura. Auth emite JWT HS256 con emisor, audiencia, usuario, identificador de token, rol, permisos y versión de sesión.
 
----
+**El token dura una hora.** En `Services/Auth/src/main.ts`, `expiresIn:1*60*60` y `expiresAt` representan la misma duración. Cambiarla requiere reconstruir Auth y obtener un token nuevo; no altera tokens existentes. No hay refresh token implementado.
 
-## 8. Backend: especificación técnica
+Gateway y servicios verifican firma, algoritmo, issuer, audience y expiración. La introspección comprueba usuario activo, revocación y versión. Logout registra el jti en revoked_tokens; cambios de usuario y permisos invalidan sesiones mediante token_version. Auth es una dependencia de disponibilidad para operaciones protegidas.
 
-### 8.1 Punto de entrada
-El punto de entrada está en `Backend/Program.cs`.
+Roles: ADMIN, OPERADOR y CONSULTA. Los permisos de reportes son reports:generate, reports:read y reports:download; descargar exige además ADMIN. La autorización efectiva se verifica en backend, además de las guardas de Angular.
 
-#### Funcionalidades principales:
-- Configuración de conexión a SQL Server.
-- Registro del DbContext con Entity Framework Core.
-- Configuración de autenticación JWT.
-- Registro de servicios y repositorios en dependency injection.
-- Habilitación de Swagger UI.
-- Activación de SignalR.
-- Mapeo de controladores y hub.
-- Exposición de endpoint de salud (`/health`).
+Las APIs internas requieren X-Service-Key. Gateway no las publica y elimina ese encabezado si viene del cliente. HS256 y la clave interna son secretos compartidos: su posesión permite firmar o realizar llamadas internas respectivamente. La firma asimétrica, rotación e identidad por llamante son mejoras pendientes. external_identities prepara el modelo, pero no acredita login OAuth/OIDC externo.
 
-### 8.2 Servicios registrados
-Los servicios inyectados en la aplicación incluyen:
-- `IAuthService`
-- `IUsuariosService`
-- `ISensoresService`
-- `ILecturasService`
-- `IAlertasService`
-- `IHistorialService`
-- `IBitacoraService`
-- `IDashboardService`
-- `IMonitoreoService`
-- `IAlertEvaluationService`
-- `IAlertRule`
-- `IConfiguracionAlertaService`
+Angular guarda token y usuario en localStorage. Su isAuthenticated() comprueba presencia del token; la validez se decide en backend. Se debe prevenir XSS y mejorar el manejo de sesión. CORS aplica a navegadores según CORS_ORIGINS y no impide solicitudes desde Postman.
 
-### 8.3 Repositorios por dominio
-La primera refactorización de fase 3 separa la persistencia en contratos e implementaciones SQL:
-- `IUsuarioRepository` / `SqlUsuarioRepository`.
-- `IComunidadRepository` / `SqlComunidadRepository`.
-- `ISensorRepository` / `SqlSensorRepository`.
-- `IAlertaRepository` / `SqlAlertaRepository`.
-- `IAuditRepository` / `SqlAuditRepository`.
-- `IDashboardRepository` / `SqlDashboardRepository`.
+## 7. Lecturas, alertas y SignalR
 
-El registro se concentra en `AddWeatherRiskApplication`. Los repositorios aún comparten `WeatherDbContext` y SQL Server; la separación en microservicios sigue pendiente. El diseño y los acoplamientos restantes se describen en [Arquitectura de fase 3](docs/fase-3/ARQUITECTURA.md).
+1. ReadingWriter valida sensor y actividad, y consulta reglas activas en Alert.
+2. Una transacción SQL Server guarda lectura, último valor y evaluation_outbox.
+3. EvaluationWorker reserva trabajo con bloqueo y vencimiento temporal, y llama a `/internal/evaluate`.
+4. Alert registra reading_id único y evalúa reglas dentro de una transacción PostgreSQL. Un reintento no duplica la alerta de esa lectura.
+5. Sensor elimina el trabajo tras evaluación exitosa o lo reprograma ante fallos. SignalR comunica actualizaciones.
 
-### 8.4 Capa de datos
-Los modelos principales se encuentran en la carpeta `Backend/Models`.
+Hay consistencia eventual, sin transacción distribuida. La outbox protege trabajo confirmado; si Alert falla durante la consulta inicial de reglas, una lectura nueva puede no registrarse.
 
-#### Modelos críticos
-- `Usuario`
-- `Sensor`
-- `LecturaSensor`
-- `Alerta`
-- `HistorialEvento`
-- `Bitacora`
-- `ConfiguracionAlerta`
+Niveles: VERDE, AMARILLO, NARANJA y ROJO. Las reglas contienen tipo, fenómeno, límites, mensaje y actividad. El evaluador selecciona una coincidencia y conserva valor y umbrales aplicados en la alerta; no genera necesariamente una alerta por cada regla coincidente.
 
-El `WeatherDbContext` define las tablas y configuraciones de mapeo, además de datos semilla para usuarios, sensores y reglas de alerta.
+La simulación está apagada por defecto. ADMIN la habilita con `POST /api/monitoreo/reiniciar` y la detiene mediante `PATCH /api/monitoreo/estado`, cuerpo `{"activo":false}`. El estado persiste en SQL. Los sensores activos sin lectura en quince minutos se consideran sin comunicación. Falta coordinación del simulador y backplane SignalR entre réplicas.
 
----
+Audit recibe eventos con eventId único. Sus emisores registran fallos, pero no tienen outbox durable de auditoría; no se garantiza recuperar todo evento perdido por indisponibilidad.
 
-## 9. Backend: controladores
+## 8. Reportes PDF
 
-### 9.1 AuthController
-Ruta base: `/api/auth`
+Report obtiene datos mediante APIs, genera HTML con Jinja2 y PDF con WeasyPrint. MongoDB conserva metadatos y GridFS el archivo. `Services/Report/templates/report.html` incluye logo, fecha UTC, usuario, filtros, tablas y numeración.
 
-#### Endpoints
-- `POST /api/auth/login` - autenticación anónima
-- `GET /api/auth/me` - datos del usuario autenticado
+Tipos: COMMUNITIES, SENSORS, READINGS, ALERTS, EVENTS, SENSOR_STATUS, CLIMATE_STATISTICS y EXECUTIVE.
 
-#### Descripción
-Valida credenciales y genera JWT con claims de usuario y rol.
+```http
+POST /api/reports
+Authorization: Bearer TOKEN
+Content-Type: application/json
+Idempotency-Key: ejemplo-lecturas-001
 
----
-
-### 9.2 DashboardController
-Ruta base: `/api/dashboard`
-
-#### Endpoints
-- `GET /api/dashboard`
-
-#### Descripción
-Retorna un resumen del estado general del sistema con métricas de clima y nivel de riesgo.
-
-#### Estructura de respuesta
-```json
-{
-  "temperatura": { "valor": 27.5, "unidad": "°C" },
-  "humedad": { "valor": 78, "unidad": "%" },
-  "viento": { "valor": 42, "unidad": "km/h" },
-  "lluvia": { "valor": 18.5, "unidad": "mm/h" },
-  "nivelRio": { "valor": 2.8, "unidad": "m" },
-  "nivelGeneral": "VERDE",
-  "alertasActivas": 0,
-  "sensoresActivos": 5,
-  "sensoresTotales": 5
-}
+{"type":"READINGS","filters":{"comunidadId":1,"sensorId":2}}
 ```
 
----
+| Operación | Ruta |
+|---|---|
+| Generar | `POST /api/reports` |
+| Historial | `GET /api/reports?page=1&pageSize=20` |
+| Detalle | `GET /api/reports/{id}` |
+| Descargar | `GET /api/reports/{id}/download` |
 
-### 9.3 SensoresController
-Ruta base: `/api/sensores`
+Metadatos: identificador, tipo, usuario, fecha, filtros, estado, nombre, filas y fecha de descarga. Estados: GENERATING, COMPLETED y FAILED. Idempotency-Key es opcional y está aislada por usuario: clave y contenido iguales reutilizan el registro; parámetros diferentes responden 409. ADMIN consulta el conjunto; otros usuarios autorizados consultan sus propios reportes.
 
-#### Endpoints
-- `GET /api/sensores`
-- `GET /api/sensores/{id}`
-- `POST /api/sensores`
-- `PUT /api/sensores/{id}`
-- `PATCH /api/sensores/{id}/estado`
-- `DELETE /api/sensores/{id}`
+La generación es síncrona, con lotes de hasta 200 y máximo 10 000 filas por conjunto. No hay cola de generación. downloadedAt se registra al completar la lectura del flujo del archivo en el servidor. Las estadísticas integran tasas de lluvia por intervalos, sin sumar mm/h como cantidades acumuladas. El renderizador restringe recursos externos y archivos; Jinja2 escapa contenido.
 
-#### Funcionalidad
-Permite registrar sensores de distintos tipos, consultar estado, actualizar información y cambiar el estado activo/inactivo.
+## 9. Configuración e instalación
 
-#### Tipos soportados
-- `TEMPERATURA`
-- `HUMEDAD`
-- `VIENTO`
-- `LLUVIA`
-- `NIVEL_RIO`
+Requiere Docker Engine/Compose con contenedores Linux o Docker Desktop. Las imágenes incluyen runtimes y gestores; Node 24 en el host se necesita solo para ejecutar directamente scripts Node.
 
----
+| Variable | Función |
+|---|---|
+| JWT_KEY, SERVICE_KEY | Claves distintas y aleatorias de al menos 32 bytes |
+| POSTGRES_PASSWORD, MSSQL_SA_PASSWORD | Credenciales relacionales; SQL Server exige complejidad |
+| MONGO_ROOT_PASSWORD, MONGO_REPORT_PASSWORD, MONGO_AUDIT_PASSWORD | Credenciales MongoDB |
+| ADMIN_USERNAME, ADMIN_PASSWORD | Crea el administrador si no existe ese username; no cambia contraseñas existentes |
+| API_PORT, FRONTEND_PORT | Puertos por defecto 5000 y 4200 |
+| BIND_ADDRESS | Dirección publicada; por defecto 127.0.0.1 |
+| CORS_ORIGINS | Orígenes permitidos separados por coma |
+| DATA_VOLUME_PREFIX | Nombres de volúmenes |
+| SEED_USERNAME, SEED_PASSWORD, DEMO_PASSWORD | Opcionales de la semilla |
 
-### 9.4 AlertasController
-Ruta base: `/api/alertas`
+Crear `.env` junto a docker-compose.yml con valores reales. No versionarlo. Las contraseñas en URI requieren codificación si contienen caracteres reservados; el generador usa hexadecimal.
 
-#### Endpoints
-- `GET /api/alertas`
-- `GET /api/alertas/activas`
-- `POST /api/alertas/{id}/cerrar`
+Windows, instalación nueva:
 
-#### Funcionalidad
-Consulta el conjunto de alertas registradas y permite cerrarlas cuando ya no están vigentes.
-
----
-
-### 9.5 HistorialController
-Ruta base: `/api/historial`
-
-#### Endpoints
-- `GET /api/historial`
-
-#### Funcionalidad
-Consulta eventos históricos de riesgo y fenónemos detectados.
-
----
-
-### 9.6 UsuariosController
-Ruta base: `/api/usuarios`
-
-#### Endpoints
-- `GET /api/usuarios`
-
-#### Restricción
-Solo accesible con rol `ADMIN`.
-
----
-
-## 10. Backend: servicios y lógica de negocio
-
-### 10.1 AuthService
-- Verifica usuario y contraseña legibles.
-- Consulta al repositorio por username.
-- Genera JWT con claims de usuario y rol.
-- Calcula fecha de expiración en 8 horas.
-
-### 10.2 DashboardService
-- Recupera un snapshot del estado global.
-- Read only union of sensor data and active alerts.
-- Calcula nivel general del sistema.
-
-### 10.3 AlertEvaluationService
-Evalúa condiciones según reglas establecidas. Aunque el presente proyecto cuenta con reglas configurables, la lógica de evaluación se representa en la capa de servicios para analizar valores críticos y producir eventos de alerta.
-
-### 10.4 ConfiguracionAlertaService
-- Gestiona reglas de activación por tipo de sensor.
-- Permite definir umbrales para fenómeno, nivel y mensaje asociado.
-
-### 10.5 MonitoreoService
-- Encapsula la lógica de lectura y actualización en tiempo real.
-- Se integra con SignalR para comunicación de eventos del sistema.
-
----
-
-## 11. SignalR e integración en tiempo real
-
-### 11.1 Hub
-La aplicación expone un hub:
-- `/hubs/monitoreo`
-
-Archivo principal:
-- `Backend/Hubs/MonitoreoHub.cs`
-
-Actualmente el hub está definido como una clase vacía, pero está preparado para emitir eventos en tiempo real como:
-- `lecturaActualizada`
-- `alertaGenerada`
-
-### 11.2 Cliente Angular
-En el frontend, el servicio `Signalr` en `src/app/core/services/signalr/signalr.ts`:
-- crea la conexión con `HubConnectionBuilder`;
-- usa la URL del hub desde `environment.ts`;
-- incluye token JWT en `accessTokenFactory`;
-- escucha eventos `lecturaActualizada` y `alertaGenerada`;
-- expone observables para actualización reactiva.
-
----
-
-## 12. Frontend: especificación técnica
-
-### 12.1 Arquitectura general
-El frontend utiliza Angular con componentes standalone y ruteo basado en carga lazy vía `loadComponent()`.
-
-### 12.2 Estructura principal
-```text
-Frontend/src/app/
-├── app-routing.module.ts
-├── app.module.ts
-├── app.routes.ts
-├── core/
-│   ├── guards/
-│   ├── header/
-│   ├── interceptors/
-│   ├── layout/
-│   ├── models/
-│   ├── services/
-│   ├── sidebar/
-│   └── footer/
-├── features/
-│   ├── alertas/
-│   ├── auth/
-│   ├── dashboard/
-│   ├── historial/
-│   └── sensores/
-└── shared/
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/init-env.ps1
+docker compose up -d --build --wait --wait-timeout 240
 ```
 
-### 12.3 Rutas de navegación
-Las rutas principales implementadas por `app.routes.ts` son:
-- `/login`
-- `/dashboard`
-- `/sensores`
-- `/sensores/nuevo`
-- `/sensores/editar/:id`
-- `/alertas`
-- `/historial`
+El inicializador rechaza sobrescribir `.env`. En Linux, únicamente si todavía no existe:
 
-### 12.4 Layout principal
-El componente `LayoutComponent` incluye:
-- `Header`
-- `Sidebar`
-- `router-outlet`
-- `Footer`
-
-Esto permite una navegación consistente para todas las pantallas autenticadas.
-
----
-
-## 13. Frontend: módulos funcionales
-
-### 13.1 Login
-Ruta: `/login`
-
-#### Funcionalidad
-- formulario de acceso con usuario y contraseña;
-- llamado a `AuthService.login()`;
-- almacenamiento del token y usuario en localStorage;
-- redirección al dashboard una vez autenticado.
-
-#### Credenciales por defecto documentadas en la aplicación
-- Usuario: `admin`
-- Contraseña: `123456`
-
-### 13.2 Dashboard
-Ruta: `/dashboard`
-
-#### Funcionalidad
-Muestra indicadores clave del sistema:
-- temperatura
-- humedad
-- nivel del río
-- velocidad de viento
-- cantidad de alertas activas
-- sensores activos
-- nivel general de riesgo
-
-### 13.3 Sensores
-Ruta: `/sensores`
-
-#### Funcionalidad
-- listado de sensores con tipo, valor actual y estado;
-- activación/desactivación dinámica por toggle;
-- edición de un sensor;
-- creación de sensor nuevo;
-- eliminación.
-
-### 13.4 Alertas
-La estructura del módulo de alertas existe y se orienta a la visualización de alertas vigentes y cierre de eventos.
-
-### 13.5 Historial
-Ruta: `/historial`
-
-#### Funcionalidad
-- tabla de eventos climáticos;
-- filtros por fenómeno, nivel, sensor;
-- actualización manual de historial;
-- visualización de resultados vacíos con mensajes informativos.
-
----
-
-## 14. Servicios del frontend
-
-### 14.1 AuthService
-Responsable de:
-- iniciar sesión;
-- persistir token y sesión;
-- leer usuario autenticado;
-- cerrar sesión;
-- verificar autenticación;
-- exponer el observable `user$`.
-
-### 14.2 SensorService
-Expone operaciones CRUD sobre sensores:
-- `getSensores()`
-- `getSensor(id)`
-- `createSensor()`
-- `updateSensor()`
-- `toggleSensor()`
-- `deleteSensor()`
-
-### 14.3 DashboardService
-Consulta el endpoint `/api/dashboard` para construir el resumen del sistema.
-
-### 14.4 HistorialService
-Recibe datos del historial de eventos para visualización y filtrado.
-
-### 14.5 Signalr Service
-Conecta con el hub y publica eventos para componentes que reaccionan a lecturas y alertas.
-
----
-
-## 15. Seguridad
-
-### 15.1 Autenticación
-El backend usa JWT Bearer.
-
-#### Flujo de autenticación
-1. El usuario envía username y password a `/api/auth/login`.
-2. El backend valida credenciales.
-3. Genera token JWT con rol y claims.
-4. El cliente persiste el token en localStorage.
-5. El interceptor adjunta el header `Authorization: Bearer <token>` a cada petición HTTP.
-
-### 15.2 Autorización
-- Rutas de administración restringidas por `[Authorize]` y `[Authorize(Roles = "ADMIN")]`.
-- Los endpoints de login son públicos por designio con `[AllowAnonymous]`.
-
-### 15.3 Protección de rutas frontend
-Aunque existen guards y estructura de autenticación, la implementación real del enrutamiento muestra un patrón de navegación protegida por servicio + sesión local. Se recomienda consolidar validación de rutas con `AuthGuard` formalmente si se desea reforzar la seguridad front-end.
-
----
-
-## 16. Persistencia y modelo de datos
-
-### 16.1 Base de datos
-La base de datos soportada es SQL Server, con generación de schema a través de EF Core.
-
-### 16.2 Tablas principales
-- `Usuarios`
-- `Sensores`
-- `LecturasSensores`
-- `Alertas`
-- `HistorialEventos`
-- `Bitacora`
-- `ConfiguracionAlertas`
-
-### 16.3 Datos semilla
-Se cargan datos iniciales para:
-- usuarios administrador y operador;
-- sensores de ejemplo;
-- reglas de configuración de alertas.
-
----
-
-## 17. Reglas de negocio
-
-### 17.1 Nivel general del sistema
-El dashboard calcula el nivel general en función de los datos más críticos:
-- `VERDE`: estado normal.
-- `AMARILLO`: condición de precaución.
-- `NARANJA`: riesgo medio.
-- `ROJO`: riesgo alto.
-
-### 17.2 Alertas
-Se basan en el tipo de sensor y umbrales configurados. Algunos ejemplos documentados en datos semilla:
-- `NIVEL_RIO`: inundación
-- `VIENTO`: tormenta
-
-### 17.3 Sensores
-Los sensores pueden estar activos o inactivos según el estado operacional del sistema.
-
----
-
-## 18. Procesos de despliegue
-
-### 18.1 Despliegue con Docker Compose
-Se incluye un archivo `docker-compose.yml` en la raíz que orquesta:
-- base de datos SQL Server
-- API .NET
-- frontend Angular
-
-### 18.2 Servicios
-- `db`: base de datos SQL Server
-- `api`: backend .NET
-- `frontend`: aplicación web servido por Nginx
-
-### 18.3 Puertos por defecto
-- Base de datos: `1433`
-- API: `5000` (internamente 8080 en contenedor)
-- Frontend: `4200`
-
----
-
-## 19. Ejecución del proyecto
-
-### 19.1 Backend
-Desde la carpeta `Backend`:
 ```bash
-dotnet restore
-dotnet run
+cp .env.example .env
+nano .env
+chmod 600 .env
+docker compose config --quiet
+docker compose up -d --build --wait --wait-timeout 240
 ```
 
-### 19.2 Frontend
-Desde la carpeta `Frontend`:
+Reemplazar todos los valores de ejemplo. Modificar contraseñas de entorno después de inicializar bases no actualiza sus credenciales internas.
+
+Acceso local: frontend http://localhost:4200, reportes /reportes, Gateway http://localhost:5000. Angular usa `/api` y `/hubs/monitoreo` relativos al origen del frontend.
+
+## 10. Semilla de demostración
+
+Con los servicios activos:
+
 ```bash
-npm install
-npm start
+docker compose --profile demo run --rm seed-demo
 ```
 
-### 19.3 Docker Compose
-Desde la raíz del proyecto:
+Crea dos usuarios demo, una comunidad, seis sensores, diez reglas, lecturas y ocho PDF mediante APIs. Alertas, historial y auditoría se producen por los flujos normales. El perfil demo no se ejecuta durante un arranque estándar.
+
+Las contraseñas nuevas se muestran solo al crear usuarios. Se conservan registros existentes; ejecutar una sola instancia a la vez. Los PDF se reutilizan por clave y administrador. Las reglas son globales por tipo de sensor y pueden participar en otras lecturas; los umbrales son ilustrativos. No hay transacción global y un fallo puede dejar pasos completados. Ver conflictos, credenciales y recuperación en [SEMILLA_DEMO.md](docs/fase-3/SEMILLA_DEMO.md).
+
+## 11. Operación y VPS
+
 ```bash
-docker-compose up --build
+docker compose ps
+docker compose logs -f --tail=100 gateway
+docker compose logs --tail=100 auth sensor alert report
+docker compose up -d --build auth
 ```
 
----
+Para actualizar, traer la revisión deseada y ejecutar `docker compose up -d --build --wait`, conservando `.env` y prefijo de volúmenes. Respaldar y revisar cambios de esquema antes. Volver a código anterior no revierte automáticamente las bases.
 
-## 20. Verificación y salud del sistema
+Compose publica frontend y Gateway; los demás servicios y bases están en la red backend interna. Si Nginx corre en el host, mantener Docker enlazado a localhost y dirigir el proxy al frontend, normalmente `http://127.0.0.1:4200`.
 
-### 20.1 Health check backend
-El backend expone:
-- `/health`
-- `/`
+`infra/nginx/https.conf.example` requiere dominio, certificados y activación en el host; no instala ni renueva certificados. DNS, TLS y conectividad del dominio deben comprobarse en la VPS. Un certificado activo en un intermediario no acredita conectividad al origen.
 
-Estos endpoints permiten verificar disponibilidad básica del servicio.
+Ante un 504:
 
-### 20.2 Swagger
-La UI de Swagger se encuentra en:
-- `http://localhost:<puerto>/swagger`
+```bash
+curl -I --max-time 10 http://127.0.0.1:4200
+curl --max-time 10 http://127.0.0.1:5000/ready
+sudo nginx -t
+sudo tail -n 40 /var/log/nginx/error.log
+```
 
----
+Ajustar puertos si fueron cambiados. Revisar destino del proxy, estado de servicios, DNS, TLS y encabezado Host antes de aumentar timeouts. El 504 reportado en la VPS sigue pendiente de diagnóstico; no se acredita aquí su resolución.
 
-## 21. Observaciones de implementación
+Nginx del frontend omite la query en sus logs y Platform reduce logs de hosting/YARP para limitar exposición de tokens SignalR. El código actual puede emitir mensajes informativos de health checks y llamadas internas; no se presupone filtrado por ruta.
 
-### 21.1 Fortalezas
-- Estructura clara y modular.
-- Separación exitosa entre frontend y backend.
-- Uso de JWT y roles.
-- Integración de SignalR para tiempo real.
-- Uso de Material Design para una interfaz consistente.
-- Soporte de contenedores para despliegue.
+## 12. Verificación
 
-### 21.2 Oportunidades de mejora
-- Consolidar un conjunto de DTOs más completo para todos los controladores.
-- Definir guardas de rutas en Angular para evitar acceso no autenticado.
-- Establecer pruebas unitarias y de integración más exhaustivas.
-- Mejorar la gestión de errores y mensajes para cada endpoint.
-- Revisar la lógica de cálculo de `NivelGeneral` para incluir más condiciones climáticas.
-- Expandir el hub para eventos más específicos en los componentes de frontend.
+| Archivo | Alcance |
+|---|---|
+| scripts/seed-demo.test.mjs | Simula APIs: reejecución, fallo parcial y regla modificada |
+| Services/Auth/test/password.test.cjs | Hashes; requiere dependencias y compilación de Auth |
+| Services/Alert/src/test/java/com/weatherrisk/alert/RulesTest.java | Umbrales inclusivos y reglas inactivas |
+| Services/Report/test_reports.py | Lluvia y restricciones del renderizador |
+| scripts/verify-microservices.mjs | Integración real; crea datos y evidencias |
+| scripts/verify-persistence.mjs | Requiere artifacts/integration-results.json y datos de la integración |
+| scripts/verify-failure.mjs | Supone Alert detenido; readiness, errores y reporte FAILED |
+| Tools/Migration/test_migration.py | Validaciones del importador histórico |
 
----
+```bash
+node --test scripts/seed-demo.test.mjs
+node scripts/verify-microservices.mjs
+node scripts/verify-persistence.mjs
+docker compose exec -T report python -m unittest test_reports -v
+```
 
-## 22. Conclusión
+Los verificadores de integración necesitan credenciales válidas; INTEGRATION_USERNAME e INTEGRATION_PASSWORD pueden sustituir las de bootstrap. Usar entorno de prueba. verify-failure no detiene Alert por sí mismo. Los resultados históricos de MICROSERVICIOS.md no sustituyen pruebas actuales ni acreditan disponibilidad de la VPS.
 
-El proyecto implementa una solución técnica robusta para la supervisión de riesgos climáticos, con una API REST moderna, panel administrativo, autenticación segura, persistencia en SQL Server y capacidades de actualización en tiempo real. La arquitectura permite ampliar funcionalidad en futuras versiones mediante nuevos módulos, servicios y reglas de alerta más sofisticadas.
+## 13. Migración, respaldos y pendientes
 
----
+Tools/Migration conserva importación administrativa con validación de relaciones y hashes. Los Compose anteriores se retiraron: preparar explícitamente conexiones y destinos; no ejecutar --apply sobre bases en uso. Las exportaciones son privadas.
 
-## 23. Referencias del repositorio
-- Backend: `Backend/Program.cs`
-- Frontend: `Frontend/src/app/app.routes.ts`
-- Base de datos: `Backend/Data/WeatherDbContext.cs`
-- API principal: `Backend/Controllers/`
-- Servicios de autenticación: `Backend/Services/AuthService.cs`
-- Configuración de despliegue: `docker-compose.yml`
+Un respaldo completo cubre las tres bases PostgreSQL, SQL Server, MongoDB con GridFS y configuración privada. Los volúmenes no son respaldos. Falta automatizar y comprobar una restauración integral.
+
+Pendientes: verificar dominio, TLS y renovación en VPS; contrastar Angular 22+ requerido con versión 20 declarada; auditoría durable; disponibilidad de reglas; simulación y SignalR entre réplicas; pruebas CRUD, carga y fallos; separar archivos extensos; firma asimétrica y rotación; autenticación externa; validación meteorológica y recuperación de datos. Compose no equivale a un despliegue Kubernetes.
+
+## 14. Documentación relacionada
+
+- [Microservicios y antecedentes](docs/fase-3/MICROSERVICIOS.md).
+- [Semilla de demostración](docs/fase-3/SEMILLA_DEMO.md).
+- [Seguimiento de fase 3](TAREAS_FASE_3.md).
+- [Diseño histórico](docs/fase-3/ARQUITECTURA.md).

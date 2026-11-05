@@ -1,5 +1,7 @@
 # Microservicios — implementación y operación
 
+La [documentación técnica principal](<../../DOCUMENTACION_TECNICA .md>) describe el estado actual. Los resultados de traslado y pruebas indicados más adelante son antecedentes históricos, no una verificación nueva de la VPS.
+
 ## Estado actual
 
 La arquitectura activa de `docker-compose.yml` ejecuta Gateway y seis aplicaciones independientes. No usa el backend monolítico como destino ni comparte su DbContext. Angular conserva sus rutas y consume Nginx → Gateway → APIs. El codigo y el despliegue del monolito anterior se retiraron; su historial permanece en Git.
@@ -36,7 +38,7 @@ En esta máquina ya se creó `.env`; el inicializador rechaza sobrescribirlo. Lo
 
 Únicamente se publican frontend y Gateway, enlazados a localhost de forma predeterminada. Los servicios y bases quedan en una red interna. `BIND_ADDRESS`, `API_PORT`, `FRONTEND_PORT` y `CORS_ORIGINS` se configuran por entorno.
 
-**Credenciales:** `ADMIN_PASSWORD` inicializa exclusivamente un usuario en una base vacía. No cambia la contraseña de un usuario existente. En esta máquina se importaron los usuarios anteriores: se utilizan sus contraseñas anteriores. No se guardaron sus contraseñas en texto plano ni se restablecieron. Hay que iniciar sesión otra vez porque cambió el emisor JWT.
+**Credenciales:** `ADMIN_PASSWORD` crea el administrador cuando su username no existe; no cambia la contraseña de un usuario existente. Los usuarios importados conservan sus contraseñas anteriores. Hay que iniciar sesión otra vez si cambia el emisor JWT.
 
 `DATA_VOLUME_PREFIX` selecciona los volúmenes. La instalación local migrada usa `climate-phase3-migrated`; los volúmenes de las pruebas y el volumen original del monolito se conservaron.
 
@@ -89,7 +91,7 @@ La obtención de datos utiliza lotes de 200 y un máximo de 10 000 registros por
 
 ## Seguridad y comunicación interna
 
-- Auth emite HS256 con issuer `WeatherRisk.Auth`, audience `WeatherRisk`, sub, jti, role, permissions, version y expiración de ocho horas.
+- Auth emite HS256 con issuer `WeatherRisk.Auth`, audience `WeatherRisk`, sub, jti, role, permissions, version y expiración de una hora. No implementa refresh token.
 - Gateway y servicios validan firma, algoritmo, issuer, audience y expiración. Además consultan la revocación y el estado del usuario en Auth por HTTP; una indisponibilidad de identidad bloquea la operación protegida.
 - Cambiar usuario, rol, contraseña o estado incrementa token_version e invalida tokens existentes. Modificar permisos de un rol invalida las sesiones de ese rol.
 - Roles conservados: ADMIN, OPERADOR y CONSULTA. ADMIN recibe inicialmente `reports:generate`, `reports:read` y `reports:download`. `PUT /api/roles/{role}/permissions` permite administrarlos. La descarga exige también ADMIN.
@@ -103,7 +105,9 @@ Para fase 4: cambiar a firma asimétrica con rotación/JWKS y OAuth/OIDC externo
 
 Una lectura comprueba sensor, actividad y existencia de reglas. En una transacción SQL se guardan la lectura, el último valor y un registro en evaluation_outbox. Un worker reclama el trabajo con bloqueo/lease, llama a Alert y reintenta si falla. Alert usa reading_id único para evitar duplicar alertas al recibir una evaluación repetida y conserva umbrales aplicados. La lectura y su alerta tienen consistencia eventual.
 
-Los niveles admitidos son VERDE, AMARILLO, NARANJA y ROJO. El motor acepta reglas por tipo para los cinco fenómenos solicitados. Las seis reglas importadas cubren inundación y tormenta; queda completar y validar la configuración de sequía, helada e incendio forestal. Las reglas son configurables y no sustituyen criterios meteorológicos validados.
+Los niveles admitidos son VERDE, AMARILLO, NARANJA y ROJO. El motor acepta reglas por tipo para los cinco fenómenos solicitados. Las seis reglas importadas históricamente cubrían inundación y tormenta. La [semilla actual](SEMILLA_DEMO.md), ejecutada explícitamente con el perfil demo, incorpora diez reglas ilustrativas para los cinco fenómenos; su presencia debe comprobarse en cada instalación. No sustituyen criterios meteorológicos validados.
+
+La outbox protege evaluaciones de lecturas ya confirmadas. La consulta inicial de reglas depende de Alert: si falla, puede impedir registrar una lectura nueva.
 
 La simulación está apagada por defecto. `POST /api/monitoreo/reiniciar` la habilita; `PATCH /api/monitoreo/estado` con `{"activo":false}` la detiene. Su estado se guarda en SQL. Los sensores activos sin lectura en quince minutos se consideran SIN_COMUNICACION. Para múltiples réplicas aún se debe coordinar un único simulador y distribuir eventos SignalR mediante backplane.
 
@@ -156,6 +160,6 @@ verify-migrated.mjs es una comprobación puntual posimportación: usa la clave l
 
 ## Pendientes de cierre de fase
 
-VPS, dominio, certificados HTTPS y renovación; actualización Angular 20 a 22+; catálogo y demostración de todos los fenómenos; pruebas de carga; auditoría durable; coordinación de simulación/SignalR al escalar; backups y restauración de todos los gestores; revisión de código frontend duplicado; capturas y defensa individual. La lista de seguimiento está en [TAREAS_FASE_3.md](../../TAREAS_FASE_3.md).
+Verificar dominio, certificados HTTPS y renovación de la VPS, incluido el diagnóstico del 504 reportado; actualizar Angular 20 conforme al requisito 22+; ejecutar y comprobar la semilla para los cinco fenómenos; validar umbrales; ampliar pruebas de carga y CRUD; incorporar auditoría durable y coordinación de simulación/SignalR; comprobar backups y restauración; continuar la revisión de código sin uso, capturas y defensa individual. La lista de seguimiento está en [TAREAS_FASE_3.md](../../TAREAS_FASE_3.md).
 
 Referencia de APIs de las tecnologías usadas: [YARP y autorización](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/yarp/authn-authz?view=aspnetcore-10.0), [Spring Security JWT](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html), [NestJS Guards](https://docs.nestjs.com/guards), [FastAPI lifespan](https://fastapi.tiangolo.com/advanced/events/), [MongoDB GridFS](https://www.mongodb.com/docs/languages/python/pymongo-driver/current/crud/gridfs/).

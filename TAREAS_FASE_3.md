@@ -11,7 +11,11 @@ Se implementaron y desplegaron localmente los seis microservicios independientes
 - [Arquitectura activa, contratos, operación y traslado ejecutado](docs/fase-3/MICROSERVICIOS.md).
 - [Diseño y primer incremento histórico](docs/fase-3/ARQUITECTURA.md).
 - [Inventario de contratos, flujos y pendientes](docs/fase-3/CONTRATOS_ACTUALES.md).
-- [Pruebas y comandos de verificación](Tests/Regression/README.md).
+- [Pruebas y comandos de verificación](<DOCUMENTACION_TECNICA .md#12-verificación>).
+
+### Actualización de documentación y limpieza
+
+Se retiraron el monolito, su configuración de base de datos y sus pruebas acopladas. La documentación técnica principal describe los servicios activos y el JWT de una hora. La semilla opcional `scripts/seed-demo.mjs` incorpora datos ilustrativos para los cinco fenómenos y reportes mediante APIs; su ejecución en la VPS y la validación meteorológica no se acreditan por la existencia del script. Las casillas y resultados del 21 de octubre siguientes conservan su contexto histórico y deben revalidarse antes de certificar cierre.
 
 Verificado: compilación Docker de aplicaciones y frontend; once grupos de integración real; JWT y permisos; WebSocket autenticado; ocho PDF e historial; persistencia tras reinicio; fallo temporal de Alert; pruebas e importación real de datos; ocho PDF adicionales desde los datos migrados. No se acreditan VPS/HTTPS, pruebas de carga, actualización Angular 22+ ni defensa individual.
 

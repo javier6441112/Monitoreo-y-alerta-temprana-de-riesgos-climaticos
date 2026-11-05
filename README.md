@@ -19,9 +19,11 @@ Si `.env` ya existe, conservarlo y ejecutar solamente Docker Compose. En GNU/Lin
 - Reportes: http://localhost:4200/reportes
 - Gateway: http://localhost:5000
 
-Los usuarios importados conservan sus contraseñas anteriores. ADMIN_PASSWORD solo inicializa bases vacías. Hay que iniciar sesión nuevamente después de la migración.
+Los usuarios importados conservan sus contraseñas anteriores. ADMIN_PASSWORD crea el administrador si ese username no existe; no restablece contraseñas existentes. Hay que iniciar sesión nuevamente después de la migración.
 
 ## Documentación
+
+- [Documentación técnica actual](<DOCUMENTACION_TECNICA .md>): arquitectura, APIs, seguridad, persistencia, despliegue y diagnóstico.
 
 - [Semilla de datos de demostración](docs/fase-3/SEMILLA_DEMO.md): `docker compose --profile demo run --rm seed-demo` después de levantar los servicios.
 
@@ -31,4 +33,4 @@ Los usuarios importados conservan sus contraseñas anteriores. ADMIN_PASSWORD so
 
 El repositorio contiene la arquitectura activa de microservicios. Se retiraron el backend monolitico, su despliegue y sus pruebas. Las herramientas administrativas de importacion se conservan en `Tools/Migration/`.
 
-El VPS, HTTPS y la actualización de Angular 20 a 22+ siguen pendientes. No se deben subir archivos .env ni exportaciones privadas de la base de datos.
+El acceso por dominio y HTTPS de la VPS requiere verificación; el error 504 reportado sigue pendiente de diagnóstico. Angular permanece en la versión 20 declarada. No se deben subir archivos .env ni exportaciones privadas de la base de datos.
