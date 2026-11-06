@@ -2,6 +2,10 @@
 
 La arquitectura activa usa un Gateway YARP y seis microservicios: Auth (NestJS), Community y Sensor (.NET 10), Alert (Java/Spring Boot), Report y Audit (Python/FastAPI). La persistencia se distribuye entre PostgreSQL, SQL Server y MongoDB. Angular accede a las APIs mediante Nginx y Gateway.
 
+## Link del repositorio 
+```
+https://desawebproyectoclimatico.dpdns.org/
+```
 ## Ejecutar
 
 Requiere Docker con contenedores Linux y Docker Compose.
