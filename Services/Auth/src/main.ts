@@ -160,6 +160,10 @@ class Api {
     await audit(String(user.id), 'LOGIN');
     return { token, tokenType:'Bearer', expiresAt, user:safeUser(user) };
   }
+  // Esta ruta debe declararse antes de /:provider; de lo contrario Express
+  // interpreta "providers" como el nombre de un proveedor.
+  @Get('/api/auth/oauth/providers') @Public()
+  oauthProviders() { return { google:oauthEnabled('google'), github:oauthEnabled('github') }; }
   @Get('/api/auth/oauth/:provider') @Public()
   oauthStart(@Param('provider') providerName: string, @Res() response: Response) {
     const provider = providerFrom(providerName), config = oauthConfig(provider);
@@ -188,8 +192,6 @@ class Api {
       return response.redirect(302, `${publicUrl}/login#oauth_error=failed`);
     }
   }
-  @Get('/api/auth/oauth/providers') @Public()
-  oauthProviders() { return { google:oauthEnabled('google'), github:oauthEnabled('github') }; }
   @Get('/api/auth/me') async me(@Req() request: AuthRequest) {
     return safeUser((await pool.query('SELECT * FROM users WHERE id=$1', [request.user.sub])).rows[0]);
   }
