@@ -19,6 +19,7 @@ export interface AuthResponse {
   expiresAt: string;
   user: User;
 }
+export interface OAuthProviders { google: boolean; github: boolean; }
 
 @Injectable({
   providedIn: 'root'
@@ -44,6 +45,15 @@ export class AuthService {
         this.userSubject.next(response.user);
       })
     );
+  }
+
+  oauthProviders(): Observable<OAuthProviders> {
+    return this.http.get<OAuthProviders>(`${environment.apiUrl}/auth/oauth/providers`);
+  }
+
+  completeOAuth(token: string): Observable<User> {
+    localStorage.setItem(this.tokenKey, token);
+    return this.me();
   }
 
   me(): Observable<User> {

@@ -26,6 +26,7 @@ void Route(string id,string path,string cluster,bool anonymous=false,string? rem
 Destination("auth","AUTH_URL");Destination("community","COMMUNITY_URL");Destination("sensor","SENSOR_URL");
 Destination("alert","ALERT_URL");Destination("report","REPORT_URL");Destination("audit","AUDIT_URL");
 Route("login","/api/auth/login","auth",true);
+Route("oauth","/api/auth/oauth/{**rest}","auth",true);
 foreach(var prefix in new[]{"auth","usuarios","roles"})Route(prefix,"/api/"+prefix+"/{**rest}","auth");
 Route("community","/api/comunidades/{**rest}","community");
 Route("community-alias","/api/communities/{**rest}","community",remove:"/api/communities",prefix:"/api/comunidades");

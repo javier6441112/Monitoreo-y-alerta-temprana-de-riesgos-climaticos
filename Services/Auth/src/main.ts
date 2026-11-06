@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Body, CanActivate, Catch, Controller, Delete, ExecutionContext, Get, HttpCode, HttpException, Injectable, Module, Param, Patch, Post, Put, Query, Req, Res, SetMetadata, UnauthorizedException, UseGuards, ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import { APP_GUARD, APP_FILTER, NestFactory, Reflector } from '@nestjs/core';
 import { Pool } from 'pg';
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import type { Request, Response } from 'express';
 import { hash, verify } from './password';
@@ -14,6 +14,9 @@ const issuer = required('JWT_ISSUER'), audience = required('JWT_AUDIENCE');
 const pool = new Pool({ connectionString: required('DATABASE_URL'), connectionTimeoutMillis: 5000, statement_timeout: 10000 });
 const roles = ['ADMIN', 'OPERADOR', 'CONSULTA'];
 const permissions = ['reports:generate', 'reports:read', 'reports:download'];
+const publicUrl = (process.env.PUBLIC_URL ?? '').replace(/\/$/, '');
+const oauthProviders = ['google', 'github'] as const;
+type OAuthProvider = typeof oauthProviders[number];
 const Public = () => SetMetadata('public', true);
 const Admin = () => SetMetadata('roles', ['ADMIN']);
 type AuthRequest = Request & { user: JwtPayload };
@@ -24,6 +27,73 @@ function text(body: any, field: string, max = 200): string {
 }
 function safeUser(row: any) {
   return { id: row.id, username: row.username, nombre: row.nombre, rol: row.rol, activo: row.activo, fechaCreacion: row.fecha_creacion, ultimoAcceso: row.ultimo_acceso };
+}
+function oauthEnabled(provider: OAuthProvider) {
+  return !!publicUrl && !!process.env[`OAUTH_${provider.toUpperCase()}_CLIENT_ID`] && !!process.env[`OAUTH_${provider.toUpperCase()}_CLIENT_SECRET`];
+}
+function oauthConfig(provider: OAuthProvider) {
+  if (!oauthEnabled(provider)) fail(503, `OAuth provider ${provider} is not configured`);
+  const prefix = `OAUTH_${provider.toUpperCase()}`;
+  return { clientId: required(`${prefix}_CLIENT_ID`), clientSecret: required(`${prefix}_CLIENT_SECRET`), redirectUri: `${publicUrl}/api/auth/oauth/${provider}/callback` };
+}
+function cookie(request: Request, name: string) {
+  const encoded = request.headers.cookie?.split(';').map(value => value.trim()).find(value => value.startsWith(name+'='))?.slice(name.length+1);
+  return encoded ? decodeURIComponent(encoded) : undefined;
+}
+function oauthStateCookie(provider: OAuthProvider, state: string) {
+  return `oauth_${provider}_state=${encodeURIComponent(state)}; Path=/api/auth/oauth/${provider}; Max-Age=600; HttpOnly; Secure; SameSite=Lax`;
+}
+function clearOAuthStateCookie(provider: OAuthProvider) {
+  return `oauth_${provider}_state=; Path=/api/auth/oauth/${provider}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+}
+function providerFrom(value: string): OAuthProvider {
+  if (!oauthProviders.includes(value as OAuthProvider)) fail(404, 'Unknown OAuth provider');
+  return value as OAuthProvider;
+}
+async function issueFor(user: any) {
+  const granted = (await pool.query('SELECT permission FROM role_permissions WHERE role=$1', [user.rol])).rows.map(row=>row.permission);
+  const token = jwt.sign({ name:user.username, role:user.rol, permissions:granted, version:user.token_version }, secret,
+    { algorithm:'HS256', issuer, audience, subject:String(user.id), jwtid:randomUUID(), expiresIn:'1h' });
+  return { token, expiresAt:new Date(Date.now()+60*60*1000).toISOString() };
+}
+async function fetchJson(url: string, init: RequestInit) {
+  const response = await fetch(url, { ...init, signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error(`Provider request failed: ${response.status}`);
+  return await response.json() as Record<string, unknown>;
+}
+async function externalProfile(provider: OAuthProvider, code: string) {
+  const config = oauthConfig(provider);
+  if (provider === 'google') {
+    const tokens = await fetchJson('https://oauth2.googleapis.com/token', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({code,client_id:config.clientId,client_secret:config.clientSecret,redirect_uri:config.redirectUri,grant_type:'authorization_code'}) });
+    const accessToken = typeof tokens.access_token === 'string' ? tokens.access_token : '';
+    if (!accessToken) throw new Error('Google did not return an access token');
+    const profile = await fetchJson('https://openidconnect.googleapis.com/v1/userinfo', { headers:{Authorization:`Bearer ${accessToken}`} });
+    if (typeof profile.sub !== 'string') throw new Error('Google profile missing subject');
+    return { subject:profile.sub, name:typeof profile.name === 'string' ? profile.name : 'Usuario Google' };
+  }
+  const tokens = await fetchJson('https://github.com/login/oauth/access_token', { method:'POST', headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({code,client_id:config.clientId,client_secret:config.clientSecret,redirect_uri:config.redirectUri}) });
+  const accessToken = typeof tokens.access_token === 'string' ? tokens.access_token : '';
+  if (!accessToken) throw new Error('GitHub did not return an access token');
+  const profile = await fetchJson('https://api.github.com/user', { headers:{Authorization:`Bearer ${accessToken}`,Accept:'application/vnd.github+json','User-Agent':'weather-risk-auth'} });
+  if (typeof profile.id !== 'number') throw new Error('GitHub profile missing subject');
+  return { subject:String(profile.id), name:typeof profile.name === 'string' && profile.name.trim() ? profile.name : typeof profile.login === 'string' ? profile.login : 'Usuario GitHub' };
+}
+async function externalUser(provider: OAuthProvider, profile: {subject:string,name:string}) {
+  const found = await pool.query('SELECT u.* FROM external_identities i JOIN users u ON u.id=i.user_id WHERE i.provider=$1 AND i.subject=$2', [provider,profile.subject]);
+  if (found.rows[0]) return found.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const existing = await client.query('SELECT u.* FROM external_identities i JOIN users u ON u.id=i.user_id WHERE i.provider=$1 AND i.subject=$2 FOR UPDATE', [provider,profile.subject]);
+    if (existing.rows[0]) { await client.query('COMMIT'); return existing.rows[0]; }
+    const username = `oauth_${provider}_${profile.subject}`.slice(0,100);
+    const created = await client.query("INSERT INTO users(username,password_hash,nombre,rol) VALUES($1,$2,$3,'CONSULTA') RETURNING *", [username,hash(randomBytes(32).toString('hex')),profile.name.slice(0,200)]);
+    await client.query('INSERT INTO external_identities(user_id,provider,subject) VALUES($1,$2,$3)', [created.rows[0].id,provider,profile.subject]);
+    await client.query('COMMIT');
+    return created.rows[0];
+  } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
 }
 async function audit(user: string, action: string, entity = 'auth', id?: number) {
   try {
@@ -85,13 +155,41 @@ class Api {
     const result = await pool.query('SELECT * FROM users WHERE username=$1', [username]);
     const user = result.rows[0];
     if (!user?.activo || !verify(password, user.password_hash)) throw new UnauthorizedException('Credenciales inválidas');
-    const granted = (await pool.query('SELECT permission FROM role_permissions WHERE role=$1', [user.rol])).rows.map(r=>r.permission);
-    const token = jwt.sign({ name:user.username, role:user.rol, permissions:granted, version:user.token_version }, secret,
-      { algorithm:'HS256', issuer, audience, subject:String(user.id), jwtid:randomUUID(), expiresIn:1*60*60 });
+    const { token, expiresAt } = await issueFor(user);
     await pool.query('UPDATE users SET ultimo_acceso=now() WHERE id=$1', [user.id]);
     await audit(String(user.id), 'LOGIN');
-    return { token, tokenType:'Bearer', expiresAt:new Date(Date.now()+60 * 60 * 1000).toISOString(), user:safeUser(user) };
+    return { token, tokenType:'Bearer', expiresAt, user:safeUser(user) };
   }
+  @Get('/api/auth/oauth/:provider') @Public()
+  oauthStart(@Param('provider') providerName: string, @Res() response: Response) {
+    const provider = providerFrom(providerName), config = oauthConfig(provider);
+    const state = randomBytes(32).toString('base64url');
+    const endpoint = provider === 'google' ? 'https://accounts.google.com/o/oauth2/v2/auth' : 'https://github.com/login/oauth/authorize';
+    const query = new URLSearchParams({client_id:config.clientId,redirect_uri:config.redirectUri,response_type:'code',state,
+      scope:provider === 'google' ? 'openid profile email' : 'read:user'});
+    response.setHeader('Set-Cookie', oauthStateCookie(provider,state));
+    return response.redirect(302, endpoint+'?'+query.toString());
+  }
+  @Get('/api/auth/oauth/:provider/callback') @Public()
+  async oauthCallback(@Param('provider') providerName: string, @Query() query: any, @Req() request: Request, @Res() response: Response) {
+    const provider = providerFrom(providerName), state = typeof query.state === 'string' ? query.state : '';
+    const expected = cookie(request,`oauth_${provider}_state`) ?? '';
+    response.setHeader('Set-Cookie', clearOAuthStateCookie(provider));
+    if (!state || state.length !== expected.length || !timingSafeEqual(Buffer.from(state),Buffer.from(expected))) return response.redirect(302, `${publicUrl}/login#oauth_error=invalid_state`);
+    if (typeof query.error === 'string' || typeof query.code !== 'string') return response.redirect(302, `${publicUrl}/login#oauth_error=cancelled`);
+    try {
+      const user = await externalUser(provider,await externalProfile(provider,query.code));
+      if (!user.activo) return response.redirect(302, `${publicUrl}/login#oauth_error=inactive`);
+      const {token,expiresAt} = await issueFor(user);
+      await pool.query('UPDATE users SET ultimo_acceso=now() WHERE id=$1',[user.id]);
+      await audit(String(user.id),'LOGIN_OAUTH','auth',user.id);
+      return response.redirect(302, `${publicUrl}/login#oauth_token=${encodeURIComponent(token)}&oauth_expires_at=${encodeURIComponent(expiresAt)}`);
+    } catch {
+      return response.redirect(302, `${publicUrl}/login#oauth_error=failed`);
+    }
+  }
+  @Get('/api/auth/oauth/providers') @Public()
+  oauthProviders() { return { google:oauthEnabled('google'), github:oauthEnabled('github') }; }
   @Get('/api/auth/me') async me(@Req() request: AuthRequest) {
     return safeUser((await pool.query('SELECT * FROM users WHERE id=$1', [request.user.sub])).rows[0]);
   }

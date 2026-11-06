@@ -27,6 +27,8 @@ No continuar si la memoria disponible total es menor de 7.5 GiB o el espacio lib
 
 Crear `.env.k8s` manualmente con un editor como `nano .env.k8s`, con los mismos nombres de `.env.example`, pero valores nuevos, aleatorios y privados. Usar claves de al menos 32 bytes y contraseñas distintas para cada finalidad. Incluir además los valores de `ADMIN_USERNAME` y `ADMIN_PASSWORD` para inicializar únicamente la base Auth nueva.
 
+Para habilitar inicio de sesión externo, agregar también `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`, `OAUTH_GITHUB_CLIENT_ID` y `OAUTH_GITHUB_CLIENT_SECRET`. Si los cuatro valores quedan vacíos, la aplicación conserva el inicio de sesión local y oculta los botones externos.
+
 Comprobar que el archivo no queda expuesto:
 
 ```bash
@@ -139,6 +141,10 @@ sudo k3s kubectl -n climate create secret generic climate-secrets \
   --from-literal=MONGO_AUDIT_PASSWORD="$MONGO_AUDIT_PASSWORD" \
   --from-literal=ADMIN_USERNAME="$ADMIN_USERNAME" \
   --from-literal=ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  --from-literal=OAUTH_GOOGLE_CLIENT_ID="$OAUTH_GOOGLE_CLIENT_ID" \
+  --from-literal=OAUTH_GOOGLE_CLIENT_SECRET="$OAUTH_GOOGLE_CLIENT_SECRET" \
+  --from-literal=OAUTH_GITHUB_CLIENT_ID="$OAUTH_GITHUB_CLIENT_ID" \
+  --from-literal=OAUTH_GITHUB_CLIENT_SECRET="$OAUTH_GITHUB_CLIENT_SECRET" \
   --from-literal=AUTH_DATABASE_URL="postgresql://auth:${POSTGRES_PASSWORD}@auth-postgres:5432/auth" \
   --from-literal=COMMUNITY_DATABASE_URL="Host=community-postgres;Database=community;Username=community;Password=${POSTGRES_PASSWORD}" \
   --from-literal=SENSOR_DATABASE_URL="Server=sensor-db,1433;Database=WeatherRiskSensors;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=True" \
@@ -147,10 +153,32 @@ sudo k3s kubectl -n climate create secret generic climate-secrets \
   --from-literal=AUDIT_MONGO_URL="mongodb://audit:${MONGO_AUDIT_PASSWORD}@mongo:27017/audit?authSource=audit"
 
 sudo k3s kubectl -n climate get secret climate-secrets
-unset JWT_KEY SERVICE_KEY POSTGRES_PASSWORD MSSQL_SA_PASSWORD MONGO_ROOT_PASSWORD MONGO_REPORT_PASSWORD MONGO_AUDIT_PASSWORD ADMIN_PASSWORD
+unset JWT_KEY SERVICE_KEY POSTGRES_PASSWORD MSSQL_SA_PASSWORD MONGO_ROOT_PASSWORD MONGO_REPORT_PASSWORD MONGO_AUDIT_PASSWORD ADMIN_PASSWORD OAUTH_GOOGLE_CLIENT_SECRET OAUTH_GITHUB_CLIENT_SECRET
 ```
 
 No ejecutar `kubectl get secret ... -o yaml`: el resultado contiene secretos codificados en Base64, no cifrados de forma legible.
+
+### Configurar Google y GitHub OAuth
+
+Registrar las siguientes URLs HTTPS exactas en los proveedores. No usar IP, HTTP, ni una barra final adicional:
+
+```text
+https://desawebproyectoclimatico.dpdns.org/api/auth/oauth/google/callback
+https://desawebproyectoclimatico.dpdns.org/api/auth/oauth/github/callback
+```
+
+En Google Cloud Console, crear un cliente OAuth de tipo **Web application**, configurar la pantalla de consentimiento y registrar la primera URL como *Authorized redirect URI*. En GitHub, crear una **OAuth App** y registrar la segunda URL como *Authorization callback URL*. Copiar los Client ID y Client Secret en `.env.k8s`; no enviarlos por chat ni subirlos a Git.
+
+Después de crear o modificar las variables OAuth, recrear el Secret y reiniciar únicamente Auth:
+
+```bash
+sudo k3s kubectl -n climate delete secret climate-secrets
+# Repetir el bloque de creación del Secret de esta sección.
+sudo k3s kubectl -n climate rollout restart deployment/auth
+sudo k3s kubectl -n climate rollout status deployment/auth --timeout=5m
+```
+
+Los usuarios que inicien sesión por primera vez con Google o GitHub se crean con rol `CONSULTA`. Inicios posteriores mediante la misma identidad externa recuperan el mismo usuario y su rol actualizado. Por seguridad, una cuenta local existente no se vincula automáticamente por coincidencia de correo; esa vinculación debe implementarse como una acción autenticada y confirmada.
 
 ## 6. Desplegar y verificar
 

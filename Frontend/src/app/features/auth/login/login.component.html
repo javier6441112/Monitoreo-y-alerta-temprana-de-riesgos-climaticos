@@ -37,6 +37,14 @@
           <span *ngIf="!loading">Ingresar</span>
         </button>
 
+        <div class="oauth" *ngIf="providers.google || providers.github">
+          <span>o continúa con</span>
+          <div class="oauth-buttons">
+            <button mat-stroked-button type="button" *ngIf="providers.google" (click)="loginWith('google')" [disabled]="loading">Google</button>
+            <button mat-stroked-button type="button" *ngIf="providers.github" (click)="loginWith('github')" [disabled]="loading">GitHub</button>
+          </div>
+        </div>
+
         <div *ngIf="error" class="error-message">
           <mat-icon>error</mat-icon>
           <span>{{ error }}</span>
