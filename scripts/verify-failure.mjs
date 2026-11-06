@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const config=Object.fromEntries((await readFile(new URL('../.env',import.meta.url),'utf8')).split(/\r?\n/).filter(l=>l.includes('=')).map(l=>{const i=l.indexOf('=');return[l.slice(0,i),l.slice(i+1)];}));
+const base='http://127.0.0.1:'+(config.API_PORT??5000);
+const login=await fetch(base+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:process.env.INTEGRATION_USERNAME??config.ADMIN_USERNAME??'admin',password:process.env.INTEGRATION_PASSWORD??config.ADMIN_PASSWORD})});
+assert.equal(login.status,200);
+const {token}=await login.json();
+assert.equal((await fetch(base+'/ready')).status,503);
+const response=await fetch(base+'/api/alertas',{headers:{Authorization:'Bearer '+token}});
+assert.ok([502,503].includes(response.status));
+const report=await fetch(base+'/api/reports',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({type:'ALERTS',filters:{}})});
+assert.equal(report.status,503);
+const history=await(await fetch(base+'/api/reports',{headers:{Authorization:'Bearer '+token}})).json();
+assert.ok(history.items.some(item=>item.status==='FAILED'));
+console.log('PASS Fallo de Alert: readiness 503, error del Gateway y reporte fallido registrado');

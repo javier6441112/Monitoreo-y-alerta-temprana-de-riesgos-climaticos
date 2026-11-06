@@ -1,0 +1,35 @@
+.oauth {
+  display: grid;
+  gap: 11px;
+  margin-top: 22px;
+  color: #6c7d77;
+  font-size: 12px;
+  text-align: center;
+}
+
+.oauth-buttons { display: grid; gap: 9px; }
+
+.oauth-button {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 43px !important;
+  border-color: #d3dcd8 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #253934 !important;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .05px;
+}
+
+.oauth-button:hover:not(:disabled) {
+  border-color: #8db7aa !important;
+  background: #f6faf8 !important;
+  box-shadow: 0 2px 7px #123a3514;
+}
+
+.oauth-button:disabled { opacity: .55; }
+.oauth-icon { width: 19px; height: 19px; flex: 0 0 19px; }
+.oauth-github .oauth-icon { color: #24292f; }

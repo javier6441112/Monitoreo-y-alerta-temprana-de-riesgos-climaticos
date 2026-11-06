@@ -1,51 +1,29 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { EstadisticasHistorial, EventoHistorial, FiltrosApi } from '../../models/api-contract.models';
+import { toApiParams } from '../api-params';
 
-export interface HistorialEvent {
-  id: number;
-  fechaHora: string;
-  fenomeno: string;
-  nivel: 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO';
-  mensaje: string;
-  sensorId: number;
-}
+export type HistorialEvent = EventoHistorial;
 
 @Injectable({
   providedIn: 'root'
 })
 export class HistorialService {
-  private eventos: HistorialEvent[] = [
-    {
-      id: 1,
-      fechaHora: new Date(Date.now() - 7200000).toISOString(),
-      fenomeno: 'INUNDACION',
-      nivel: 'AMARILLO',
-      mensaje: 'Nivel del río en nivel de precaución.',
-      sensorId: 2
-    },
-    {
-      id: 2,
-      fechaHora: new Date(Date.now() - 5400000).toISOString(),
-      fenomeno: 'TORMENTA',
-      nivel: 'NARANJA',
-      mensaje: 'Velocidad del viento elevada.',
-      sensorId: 3
-    },
-    {
-      id: 3,
-      fechaHora: new Date(Date.now() - 10800000).toISOString(),
-      fenomeno: 'INUNDACION',
-      nivel: 'VERDE',
-      mensaje: 'Nivel del río dentro de parámetros normales.',
-      sensorId: 2
-    }
-  ];
+  private readonly endpoint = `${environment.apiUrl}/historial`;
 
-  getHistorial(): Observable<HistorialEvent[]> {
-    return of([...this.eventos]).pipe(delay(300));
+  constructor(private http: HttpClient) {}
+
+  getHistorial(filters: FiltrosApi = {}): Observable<HistorialEvent[]> {
+    return this.http.get<HistorialEvent[]>(this.endpoint, { params: toApiParams(filters) });
   }
 
   getHistorialBySensor(sensorId: number): Observable<HistorialEvent[]> {
-    return of(this.eventos.filter(e => e.sensorId === sensorId)).pipe(delay(200));
+    return this.getHistorial({ sensorId });
+  }
+
+  getStatistics(filters: FiltrosApi = {}): Observable<EstadisticasHistorial> {
+    return this.http.get<EstadisticasHistorial>(`${this.endpoint}/estadisticas`, { params: toApiParams(filters) });
   }
 }

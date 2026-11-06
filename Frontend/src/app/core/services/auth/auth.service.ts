@@ -1,11 +1,17 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, delay, tap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { Role } from '../../models/api-contract.models';
 
 export interface User {
   id: number;
   username: string;
   nombre: string;
-  rol: 'ADMIN' | 'OPERADOR';
+  rol: Role;
+  activo?: boolean;
+  fechaCreacion?: string;
+  ultimoAcceso?: string | null;
 }
 
 export interface AuthResponse {
@@ -13,6 +19,7 @@ export interface AuthResponse {
   expiresAt: string;
   user: User;
 }
+export interface OAuthProviders { google: boolean; github: boolean; }
 
 @Injectable({
   providedIn: 'root'
@@ -23,27 +30,15 @@ export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
 
-  constructor() {
-    const storedUser = localStorage.getItem(this.userKey);
+  constructor(private http: HttpClient) {
+    const storedUser = this.readStoredUser();
     if (storedUser) {
-      this.userSubject.next(JSON.parse(storedUser));
+      this.userSubject.next(storedUser);
     }
   }
 
   login(username: string, password: string): Observable<AuthResponse> {
-    const mockResponse: AuthResponse = {
-      token: 'mock-jwt-token-' + Date.now(),
-      expiresAt: new Date(Date.now() + 3600000).toISOString(),
-      user: {
-        id: 1,
-        username: username,
-        nombre: 'Administrador',
-        rol: 'ADMIN'
-      }
-    };
-
-    return of(mockResponse).pipe(
-      delay(800),
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, { username, password }).pipe(
       tap(response => {
         localStorage.setItem(this.tokenKey, response.token);
         localStorage.setItem(this.userKey, JSON.stringify(response.user));
@@ -52,14 +47,39 @@ export class AuthService {
     );
   }
 
+  oauthProviders(): Observable<OAuthProviders> {
+    return this.http.get<OAuthProviders>(`${environment.apiUrl}/auth/oauth/providers`);
+  }
+
+  completeOAuth(token: string): Observable<User> {
+    localStorage.setItem(this.tokenKey, token);
+    return this.me();
+  }
+
+  me(): Observable<User> {
+    return this.http.get<User>(`${environment.apiUrl}/auth/me`).pipe(
+      tap(user => {
+        localStorage.setItem(this.userKey, JSON.stringify(user));
+        this.userSubject.next(user);
+      })
+    );
+  }
+
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
+    const token = this.getToken();
+    if (token) {
+      this.http.post<void>(`${environment.apiUrl}/auth/logout`, {}).subscribe({ error: () => undefined });
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.userKey);
+    }
     this.userSubject.next(null);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return typeof localStorage === 'undefined' ? null : localStorage.getItem(this.tokenKey);
   }
 
   isAuthenticated(): boolean {
@@ -67,7 +87,23 @@ export class AuthService {
   }
 
   getUser(): User | null {
+    return this.userSubject.value;
+  }
+
+  hasRole(roles: Role[]): boolean {
+    const user = this.getUser();
+    return !!user && roles.includes(user.rol);
+  }
+
+  private readStoredUser(): User | null {
+    if (typeof localStorage === 'undefined') return null;
     const stored = localStorage.getItem(this.userKey);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as User;
+    } catch {
+      localStorage.removeItem(this.userKey);
+      return null;
+    }
   }
 }

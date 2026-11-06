@@ -1,57 +1,37 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { Alerta, EstadoAlerta, FiltrosApi } from '../../models/api-contract.models';
+import { toApiParams } from '../api-params';
 
-export interface Alerta {
-  id: number;
-  nivel: 'VERDE' | 'AMARILLO' | 'NARANJA' | 'ROJO';
-  fenomeno: string;
-  mensaje: string;
-  sensorId: number;
-  valorDetectado: number;
-  fechaHora: string;
-  activa: boolean;
-}
+export type { Alerta } from '../../models/api-contract.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AlertaService {
-  private alertas: Alerta[] = [
-    {
-      id: 1,
-      nivel: 'AMARILLO',
-      fenomeno: 'INUNDACION',
-      mensaje: 'Nivel del río en nivel de precaución.',
-      sensorId: 2,
-      valorDetectado: 3.2,
-      fechaHora: new Date(Date.now() - 3600000).toISOString(),
-      activa: true
-    },
-    {
-      id: 2,
-      nivel: 'NARANJA',
-      fenomeno: 'TORMENTA',
-      mensaje: 'Velocidad del viento elevada.',
-      sensorId: 3,
-      valorDetectado: 65,
-      fechaHora: new Date(Date.now() - 1800000).toISOString(),
-      activa: true
-    }
-  ];
+  private readonly endpoint = `${environment.apiUrl}/alertas`;
 
-  getAlertas(): Observable<Alerta[]> {
-    return of([...this.alertas]).pipe(delay(300));
+  constructor(private http: HttpClient) {}
+
+  getAlertas(filters: FiltrosApi = {}): Observable<Alerta[]> {
+    return this.http.get<Alerta[]>(this.endpoint, { params: toApiParams(filters) });
   }
 
   getAlertasActivas(): Observable<Alerta[]> {
-    return of(this.alertas.filter(a => a.activa)).pipe(delay(200));
+    return this.http.get<Alerta[]>(`${this.endpoint}/activas`);
+  }
+
+  getById(id: number): Observable<Alerta> {
+    return this.http.get<Alerta>(`${this.endpoint}/${id}`);
+  }
+
+  setStatus(id: number, estado: EstadoAlerta): Observable<Alerta> {
+    return this.http.patch<Alerta>(`${this.endpoint}/${id}/estado`, { estado });
   }
 
   cerrarAlerta(id: number): Observable<{ id: number; activa: boolean }> {
-    const index = this.alertas.findIndex(a => a.id === id);
-    if (index !== -1) {
-      this.alertas[index].activa = false;
-    }
-    return of({ id, activa: false }).pipe(delay(200));
+    return this.http.post<{ id: number; activa: boolean }>(`${this.endpoint}/${id}/cerrar`, {});
   }
 }

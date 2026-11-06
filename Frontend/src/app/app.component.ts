@@ -10,10 +10,14 @@ import { RouterOutlet } from '@angular/router';
       <router-outlet></router-outlet>
     </div>
   `,
-  styles: []
+  styles: [
+    `
+      ::ng-deep .alerta-snackbar {
+        background: #b71c1c;
+        color: #fff;
+        font-weight: 600;
+      }
+    `
+  ]
 })
-export class AppComponent {
-  constructor() {
-    console.log('🚀 AppComponent cargado');
-  }
-}
+export class AppComponent {}

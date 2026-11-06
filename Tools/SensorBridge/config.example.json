@@ -1,0 +1,8 @@
+{
+  "api_url": "https://tu-dominio/api",
+  "username": "sensor_arduino",
+  "serial_port": "COM3",
+  "temperature_sensor_id": 12,
+  "humidity_sensor_id": 13,
+  "send_interval_seconds": 30
+}

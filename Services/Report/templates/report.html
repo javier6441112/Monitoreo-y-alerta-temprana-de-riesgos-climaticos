@@ -1,0 +1,10 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<style>
+@page {size:A4 landscape; margin:22mm 14mm; @bottom-right{content:"Página " counter(page) " de " counter(pages)} @bottom-left{content:"Sistema de monitoreo y alerta temprana"}}
+body{font:10px sans-serif;color:#16352d}header{display:flex;align-items:center;border-bottom:2px solid #168a74;padding-bottom:12px}img{width:42px;margin-right:12px}h1{font-size:20px;margin:0}p{margin:5px 0}table{width:100%;border-collapse:collapse;margin-top:16px;table-layout:fixed}th,td{padding:6px;border:1px solid #cadbd5;overflow-wrap:anywhere}th{background:#e4f0eb;text-align:left}thead{display:table-header-group}tr{break-inside:avoid}small{color:#52675f}.filters{margin-top:10px}
+</style></head><body><header><img src="data:image/svg+xml;base64,{{logo}}" alt="Logo"><div><h1>{{title}}</h1><p>Monitoreo y alerta temprana de riesgos climáticos</p></div></header>
+<p>Fecha UTC: {{date}} · Usuario: {{user}}</p><small>Reporte {{report_id}}</small>
+<p class="filters">Filtros: {% for key,value in filters.items() %}{{key}}={{value}} {% else %}Sin filtros{% endfor %}</p>
+<table><thead><tr>{% for key,label in columns %}<th>{{label}}</th>{% endfor %}</tr></thead>
+<tbody>{% for row in rows %}<tr>{% for key,label in columns %}<td>{{row.get(key) if row.get(key) is not none else "—"}}</td>{% endfor %}</tr>{% else %}<tr><td colspan="{{columns|length}}">Sin datos para los filtros seleccionados.</td></tr>{% endfor %}</tbody></table>
+</body></html>
