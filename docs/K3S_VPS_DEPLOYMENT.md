@@ -23,6 +23,8 @@ df -h /
 docker compose ps
 ```
 
+Todos los comandos posteriores que usan rutas como `infra/k8s/...` deben ejecutarse desde la raíz del repositorio (`~/Monitoreo-y-alerta-temprana-de-riesgos-climaticos`), no desde `infra/k8s`.
+
 No continuar si la memoria disponible total es menor de 7.5 GiB o el espacio libre es menor de 80 GiB.
 
 Crear `.env.k8s` manualmente con un editor como `nano .env.k8s`, con los mismos nombres de `.env.example`, pero valores nuevos, aleatorios y privados. Usar claves de al menos 32 bytes y contraseñas distintas para cada finalidad. Incluir además los valores de `ADMIN_USERNAME` y `ADMIN_PASSWORD` para inicializar únicamente la base Auth nueva.
@@ -131,7 +133,7 @@ set -a
 . ./.env.k8s
 set +a
 
-sudo k3s kubectl -n climate create secret generic climate-secrets \
+sudo k3s kubectl -n climate create secret generic climate-secrets --dry-run=client -o yaml \
   --from-literal=JWT_KEY="$JWT_KEY" \
   --from-literal=SERVICE_KEY="$SERVICE_KEY" \
   --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
@@ -150,7 +152,8 @@ sudo k3s kubectl -n climate create secret generic climate-secrets \
   --from-literal=SENSOR_DATABASE_URL="Server=sensor-db,1433;Database=WeatherRiskSensors;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=True" \
   --from-literal=ALERT_DATABASE_URL="jdbc:postgresql://alert-postgres:5432/alert" \
   --from-literal=REPORT_MONGO_URL="mongodb://report:${MONGO_REPORT_PASSWORD}@mongo:27017/report?authSource=report" \
-  --from-literal=AUDIT_MONGO_URL="mongodb://audit:${MONGO_AUDIT_PASSWORD}@mongo:27017/audit?authSource=audit"
+  --from-literal=AUDIT_MONGO_URL="mongodb://audit:${MONGO_AUDIT_PASSWORD}@mongo:27017/audit?authSource=audit" \
+  | sudo k3s kubectl apply -f -
 
 sudo k3s kubectl -n climate get secret climate-secrets
 unset JWT_KEY SERVICE_KEY POSTGRES_PASSWORD MSSQL_SA_PASSWORD MONGO_ROOT_PASSWORD MONGO_REPORT_PASSWORD MONGO_AUDIT_PASSWORD ADMIN_PASSWORD OAUTH_GOOGLE_CLIENT_SECRET OAUTH_GITHUB_CLIENT_SECRET
@@ -172,7 +175,6 @@ En Google Cloud Console, crear un cliente OAuth de tipo **Web application**, con
 Después de crear o modificar las variables OAuth, recrear el Secret y reiniciar únicamente Auth:
 
 ```bash
-sudo k3s kubectl -n climate delete secret climate-secrets
 # Repetir el bloque de creación del Secret de esta sección.
 sudo k3s kubectl -n climate rollout restart deployment/auth
 sudo k3s kubectl -n climate rollout status deployment/auth --timeout=5m
