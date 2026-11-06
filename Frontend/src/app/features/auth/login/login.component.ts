@@ -24,7 +24,7 @@ import { AuthService } from '../../../core/services/auth/auth.service';
     MatProgressSpinnerModule
   ],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  styleUrls: ['./login.component.scss', './login.oauth.scss']
 })
 export class LoginComponent implements OnInit {
   loginForm: FormGroup;
